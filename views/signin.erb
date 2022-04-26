@@ -1,0 +1,19 @@
+<% if session[:msg] %>
+  <p class="flash"><%= session.delete(:msg) %></p>
+<% end %>
+
+<form action="/signin" method="post">
+  <label>
+    Username:
+    <input type="text" name="username">
+  </label>
+  
+  <label>
+    Password:
+    <input type="password" name="password">
+  </label>
+
+  <input type="submit" value="Sign In">
+</form>
+
+<p>Don't have an account? <a href="/register">Register Here</a></p>

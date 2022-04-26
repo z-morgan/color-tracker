@@ -1,0 +1,19 @@
+--- !ruby/object:User
+username: admin
+password: secret
+name: The Admin
+inventories:
+  Admin's 1st Inventory: !ruby/object:Inventory
+    name: Zach's 1st Inventory
+    users: zmorgan
+    stocked_items:
+    - !ruby/object:Color
+      line: wella
+      intensity: 10
+      hue: 2
+      count: 5
+    - !ruby/object:Color
+      line: cosmoprof
+      intensity: 8
+      hue: 3
+      count: 4

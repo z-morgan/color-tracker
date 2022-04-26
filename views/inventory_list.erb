@@ -1,0 +1,20 @@
+<% if session[:msg] %>
+  <p class="flash"><%= session.delete(:msg) %></p>
+<% end %>
+
+<h2><%= session[:name] %>'s Inventories</h2>
+
+<ul>
+  <% @inventories.each do |name, _| %>
+    <li><a href="/inventories/<%= name %>"><%= name %></a></li>
+  <% end %>
+</ul>
+
+<section>
+  <form action="/signout" method="post">
+    <label>
+      Signed in as <%= session[:name] %>
+      <input type="submit" value="Sign out">
+    </label>
+  </form>
+</section>

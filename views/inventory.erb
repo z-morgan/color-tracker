@@ -1,0 +1,19 @@
+<table>
+  <thead>
+    <tr>
+      <th>Number</th>
+      <th>Line</th>
+      <th>Count</th>
+    </tr>
+  </thead>
+  
+  <tbody>
+    <% @colors.each do |color| %>
+      <tr>
+        <td><%= "#{color.intensity}/#{color.hue}" %></td>
+        <td><%= color.line %></td>
+        <td><%= color.count %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
