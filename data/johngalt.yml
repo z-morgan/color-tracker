@@ -1,0 +1,82 @@
+--- !ruby/object:User
+username: johngalt
+password: !ruby/string:BCrypt::Password
+  str: "$2a$12$Ced0JHpXRN1JpGxoxjh1Ne5Dxu0umz5Vqn5CIb/Cc/tdCGvrUZi4C"
+  version: 2a
+  cost: 12
+  salt: "$2a$12$Ced0JHpXRN1JpGxoxjh1Ne"
+  checksum: 5Dxu0umz5Vqn5CIb/Cc/tdCGvrUZi4C
+name: John
+inventories:
+  Main Product Inventory: !ruby/object:Inventory
+    name: Main Product Inventory
+    stocked_items:
+    - !ruby/object:Color
+      line: Wella
+      count: '5'
+      depth: '1'
+      tone: '5'
+    - !ruby/object:Color
+      line: Wella
+      count: '4'
+      depth: '3'
+      tone: '4'
+    - !ruby/object:Color
+      line: Wella
+      count: '6'
+      depth: '6'
+      tone: '7'
+    - !ruby/object:Color
+      line: Difiaba
+      count: '7'
+      depth: '8'
+      tone: '4'
+    - !ruby/object:Color
+      line: Wella
+      count: 7
+      depth: '7'
+      tone: '4'
+    - !ruby/object:Color
+      line: Wella
+      count: '1'
+      depth: '9'
+      tone: '4'
+    - !ruby/object:Color
+      line: Wella
+      count: '3'
+      depth: '4'
+      tone: '2'
+    - !ruby/object:Color
+      line: Wella
+      count: '3'
+      depth: '1'
+      tone: '3'
+    - !ruby/object:Color
+      line: Difiaba
+      count: '4'
+      depth: '5'
+      tone: '3'
+    - !ruby/object:Color
+      line: Wella
+      count: '6'
+      depth: '6'
+      tone: '2'
+    - !ruby/object:Color
+      line: Wella
+      count: '8'
+      depth: '6'
+      tone: '3'
+    - !ruby/object:Color
+      line: Wella
+      count: '1'
+      depth: '11'
+      tone: '3'
+    - !ruby/object:Color
+      line: Wella
+      count: '1'
+      depth: '4'
+      tone: '11'
+    lines:
+    - Wella
+    - Difiaba
+    owner: John

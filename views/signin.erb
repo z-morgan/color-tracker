@@ -1,8 +1,4 @@
-<% if session[:msg] %>
-  <p class="flash"><%= session.delete(:msg) %></p>
-<% end %>
-
-<form action="/signin" method="post">
+<form action="/signin" method="post" class="signin">
   <label>
     Username:
     <input type="text" name="username">

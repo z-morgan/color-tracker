@@ -1,0 +1,10 @@
+--- !ruby/object:User
+username: ''
+password: !ruby/string:BCrypt::Password
+  str: "$2a$12$gQsqSJaH67aalrdEO6x9YeW2xBGG2O/XGl6oYKRPq5nq5GO4uJWHu"
+  version: 2a
+  cost: 12
+  salt: "$2a$12$gQsqSJaH67aalrdEO6x9Ye"
+  checksum: W2xBGG2O/XGl6oYKRPq5nq5GO4uJWHu
+name: Zachary
+inventories: {}

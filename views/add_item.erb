@@ -68,3 +68,41 @@
     </div>
   <% end %>
 <% end %>
+
+<br>
+<br>
+<fieldset>
+<div class="error-flash">
+  <% if session[:invalid_color] %>
+    <span class="error-flash"><%= session.delete(:invalid_color) %></span>
+  <% end %>
+</div>
+
+<form action="/inventories/<%= @inventory.name %>/add" method="post" class="new-item">
+  <label>
+    Depth/Tone:
+    <input type="number" name="depth" min="1" max="11" required>
+    /
+    <input type="number" name="tone" min="0" max="99" required>
+  </label>
+
+  <label>
+    Color line
+    <select name="line">
+      <% @lines.each do |line| %>
+        <option><%= line %></option>
+      <% end %>
+    </select>
+  </label>
+
+  <label>
+    Count
+    <input type="number" name="count" value="1" min="1">
+  </label>
+
+  <input type="submit" value="Add Item">
+</form>
+<form action="/inventories/<%= @inventory.name %>" method="get">
+  <input type="submit" value="Done Adding Items">
+</form>
+</fieldset>

@@ -1,0 +1,198 @@
+html {
+  font-size: 16px;
+}
+
+body {
+  height: 1000px;
+  margin: 0;
+}
+
+header {
+  vertical-align: top;
+  border-bottom: 2px solid black;
+  background-color: rgb(5, 238, 141);
+  height: 80px;
+}
+
+main {
+  box-sizing: border-box;
+  padding-top: 3rem;
+  height: 100%;
+  background-image: url("../images/oregon_mountains.webp");
+  background-size: 120%;
+}
+
+div.menu {
+  display: inline-block;
+  width: 73%;
+  text-align: right;
+}
+
+nav {
+  display: inline-block;
+  box-sizing: border-box;
+  width: 50%;
+}
+
+header ul {
+  font-size: 0;
+  width: auto;
+  height: auto;
+}
+
+header ul li {
+  display: inline-block;
+  font-size: 1rem;
+  width: 50%;
+  text-align: right;
+}
+
+h1 {
+  display: inline-block;
+  width: 25%;
+  margin-left: 1rem;
+}
+
+main > div {
+  height: 1rem;
+  margin: 1rem;
+}
+
+form.signin {
+  padding-top: 2rem;
+}
+
+form.signin label {
+  display: block;
+  margin-bottom: 1rem;
+}
+
+form.new-inventory {
+  padding-top: 1rem;
+}
+
+div.inventories-list a {
+  display: block;
+  margin: 1rem 0;
+}
+
+div.inventories-list form {
+  margin-top: 4rem;
+}
+
+div.tools {
+  width: 100%;
+  border-bottom: 1px solid grey;
+  padding: 1rem 0;
+  text-align: center;
+  background-color: white;
+}
+
+form.sort {
+  display: inline-block;
+  width: 33%;
+  text-align: left;
+}
+
+div.new-items {
+  display: inline-block;
+  width: 33%;
+  text-align: center;
+}
+
+div.new-line {
+  display: inline-block;
+  width: 32%;
+  text-align: right;
+}
+
+form.new-line {
+  padding-top: 1rem;
+}
+
+div.inventory-body {
+  text-align: center;
+  height: 600px;
+  
+  text-align: center;
+}
+
+div.inventory-backing {
+  background-color: lightgrey;
+  box-sizing: border-box;
+  display: block;
+  width: 70%;
+  height: 800px;
+  border-radius: 8px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+div.inv-table {
+  display: inline-block;
+  width: 20rem;
+  height: auto;
+  padding: 3rem;
+  margin: 2rem 1rem;
+  border-radius: 8px;
+  background-color: white;
+}
+
+h2.inv-table {
+  text-align: center;
+}
+
+table {
+  table-layout: fixed;
+  width: 100%;
+  text-align: center;
+}
+
+th:nth-child(1) {
+  width: 6rem;
+}
+
+td:nth-child(1) {
+  width: 6rem;
+}
+
+th:nth-child(2) {
+  text-align: left; 
+}
+
+td:nth-child(2) {
+  text-align: left;
+}
+
+div.tone {
+  margin-left: .8rem;
+}
+
+.error-flash {
+  background-color: yellow;
+  padding: 0;
+}
+
+form.register > div {
+  margin: 1rem;
+}
+
+form.register label {
+  display: block;
+  margin: .3rem;
+}
+
+fieldset {
+  background-color: white;
+  text-align: right;
+}
+
+form.new-item {
+  display: inline-block;
+  width: 70%;
+}
+
+form.new-item + form {
+  display: inline-block;
+  width: 29%;
+}

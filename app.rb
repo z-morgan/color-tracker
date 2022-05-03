@@ -4,8 +4,7 @@ set :port, 4000
 require 'sinatra/reloader'
 require 'tilt/erubis'
 require 'yaml'
-# require_relative 'dev_spike'
-
+require 'bcrypt'
 
 configure do
   enable :sessions
@@ -31,34 +30,6 @@ def save_user_to_yaml(user)
   File.open(path, "w") { |f| f.write(user.to_yaml) }
 end
 
-### The next few methods are for dev purposes only
-# def populate_inventories(user)
-#   user.inventories.each do |_, inv|
-#     inv.add_new_color("wella", 10, 2, 5)
-#     inv.add_new_color("cosmoprof", 8, 3, 4)
-#   end
-# end
-
-# # def create_dev_inventories
-# #   inventories_arr = {
-# #     "Zach's 1st Inventory" => Inventory.new("Zach's 1st Inventory", "zmorgan"),
-# #     "Zach's 2nd inventory" => Inventory.new("Zach's 2nd inventory", "zmorgan")
-# #   }
-# #   populate_inventories(inventories_arr)
-# #   File.open(data_path, "w") do |yml_file|
-# #     yml_file.write(inventories_arr.to_yaml)
-# #   end
-# # end
-
-# def create_dev_user
-#   @user = User.new("zmorgan", "secret", "Zach")
-#   @user.inventories["Zach's 1st Inventory"] = Inventory.new("Zach's 1st Inventory", "zmorgan")
-#   @user.inventories["Zach's 2nd inventory"] = Inventory.new("Zach's 2nd inventory", "zmorgan")
-#   populate_inventories(@user)
-#   save_user_to_yaml(@user)
-# end
-### end of dev methods
-
 def verify_signed_in
   unless session[:username]
     session[:msg] = "Please sign in first."
@@ -66,23 +37,91 @@ def verify_signed_in
   end
 end
 
+def authentic_password?
+  if ENV["RACK_ENV"] == "test"
+    @user.password == params[:password]
+  else
+    BCrypt::Password.new(@user.password) == params[:password]
+  end
+end
+
 def valid_password?
-  params[:password] && params[:password] == params[:password2]
+  params[:password] && (params[:password] == params[:password2])
 end
 
 def create_user
-  user = User.new(params[:username], params[:password], params[:name])
+  if ENV["RACK_ENV"] == "test"
+    password = params[:password]
+  else
+    password = BCrypt::Password.create(params[:password])
+  end
+
+  user = User.new(params[:username], password, params[:name])
   save_user_to_yaml(user)
 end
 
-before do
-  # create_dev_user # developement only
+def persist_sort_strategy
+  if params[:attribute]
+    session[:sort] = [params[:attribute], params[:order]]
+  else
+    session[:sort] = ["depth", "ascending"]
+  end
 
-  # redirect '/signin' unless session[:username] || request.path_info == '/signin'
+  @attribute, @order = session[:sort]
+end
+
+def sort_by_depth!(colors_arr)
+  colors_arr.sort_by! { |color| color.depth.to_i }
+end
+
+def sort_inventory(colors_arr)
+  persist_sort_strategy
+  case session[:sort]
+  when ["depth", "ascending"]
+    sort_by_depth!(colors_arr)
+    @indicator = %q(<div class="depth">↓</div>)
+  when ["depth", "descending"]
+    sort_by_depth!(colors_arr).reverse!
+    @indicator = %q(<div class="depth">↑</div>)
+  when ["tone", "ascending"]
+    colors_arr.sort_by!(&:tone)
+    @indicator = %q(<div class="tone">↓</div>)
+  when ["tone", "descending"]
+    colors_arr.sort_by!(&:tone).reverse!
+    @indicator = %q(<div class="tone">↑</div>)
+  end
+end
+
+def setup_inventory_objects
+  @inventory = @user.inventories[params[:inv_name]]
+  @lines = @inventory.lines
+  @colors = @inventory.stocked_items
+end
+
+def validate_color_inputs
+  if params[:line] == "" || params[:depth] == "" || params[:tone] == "" || params[:count] == ""
+
+    session[:invalid_color] = "At least one field was blank. Color product not added."
+    redirect "/inventories/#{params[:inv_name].gsub(' ', '%20')}/add"
+  end
+end
+
+before do
+  unless request.path_info =~ /(signin|register)/
+    verify_signed_in
+    @user = retrieve_user("#{session[:username]}.yml")
+  end
+end
+
+after do
+  headers["Content-Type"] = "text/html;charset=utf-8"
+end
+
+not_found do
+  redirect '/inventories'
 end
 
 get '/' do
-  verify_signed_in
   redirect '/inventories'
 end
 
@@ -91,6 +130,7 @@ get '/signin' do
     session[:msg] = "Welcome back #{session[:name]}!"
     redirect '/inventories'
   else
+
     erb :signin
   end
 end
@@ -98,21 +138,22 @@ end
 post '/signin' do
   username = params[:username]
   if File.exist?("#{data_path}/#{username}.yml")
-    user = retrieve_user("#{username}.yml")
-    name = user.name
-    if user.username == username && user.password == params[:password]
+    @user = retrieve_user("#{username}.yml")
+
+    if @user.username == username && authentic_password? # this line will be updated w/ BCrypt inclusion
       session[:username] = username
-      session[:name] = name
-      session[:msg] = "Hello #{name}!"
+      session[:name] = @user.name
+      session[:msg] = "Hello #{@user.name}!"
       redirect '/inventories'
-    else
-      session[:msg] = "Wrong username or password"
-      erb :signin
     end
+
+    session[:msg] = "Wrong username or password"
   else
     session[:msg] = "That username does not exist"
-    erb :signin
   end
+
+  status 422
+  erb :signin
 end
 
 post '/signout' do
@@ -121,59 +162,159 @@ post '/signout' do
   redirect '/signin'
 end
 
-get '/inventories' do
-  verify_signed_in
-  @inventories = retrieve_user("#{session[:username]}.yml").inventories
-  erb :inventory_list
-end
-
-get '/inventories/:inv_name' do
-  verify_signed_in
-  inventory = @user.inventories[params[:inv_name]]
-  @colors = inventory.stocked_items
-  erb :inventory
-end
-
 get '/register' do
   erb :register
 end
 
 post '/register' do
   if valid_password?
-    session[:msg] = "Account created! You may now sign in."
     create_user
+    session[:msg] = "Account created! You may now sign in."
     redirect '/signin'
   else
     session[:msg] = "It looks like your passwords don't match. *cry*"
+    status 422
+
     erb :register
   end
 end
 
-class Inventory
-  attr_accessor :stocked_items, :name
+get '/inventories' do
+  @inventories = @user.inventories
+  erb :inventory_list
+end
 
-  def initialize(name, user)
+get '/inventories/new' do
+  erb :new_inventory
+end
+
+post '/inventories/new' do
+  name = params[:new_inventory]
+  unless name.empty?
+    @user.inventories[name] = Inventory.new(name, @user.name)
+    save_user_to_yaml(@user)
+
+    session[:msg] = "Inventory Added."
+    redirect '/inventories'
+  else
+    redirect '/inventories'
+  end
+end
+
+get '/inventories/:inv_name' do 
+  setup_inventory_objects
+  sort_inventory(@colors)
+
+  erb :inventory
+end
+
+get '/inventories/:inv_name/new-line' do
+  setup_inventory_objects
+  erb :new_line
+end
+
+# this route will need to ensure that the user does not input underscores, 
+# or it will break the /use method.
+post '/inventories/:inv_name/new-line' do
+  setup_inventory_objects
+  new_line = params[:line].capitalize
+  @lines << new_line unless @lines.include?(new_line) # add an error msg if unless?
+  save_user_to_yaml(@user)
+
+  session[:msg] = "Color line added."
+  redirect "/inventories/#{params[:inv_name].gsub(' ', '%20')}"
+end
+
+get '/inventories/:inv_name/add' do
+  setup_inventory_objects
+  if @lines.empty?
+    session[:msg] = "You need to add a color line first."
+    redirect "/inventories/#{params[:inv_name].gsub(' ', '%20')}"
+  else
+    sort_inventory(@colors)
+    erb :add_item
+  end
+end
+
+post '/inventories/:inv_name/add' do
+  setup_inventory_objects
+  validate_color_inputs
+  @inventory.add_color(params[:line], params[:depth], params[:tone], params[:count])
+  save_user_to_yaml(@user)
+  sort_inventory(@colors)
+
+  session[:msg] = "Color product added."
+  erb :add_item
+end
+
+post "/inventories/:inv_name/use" do
+  setup_inventory_objects
+  @inventory.use_color(*(params[:color].split("_")))
+  save_user_to_yaml(@user)
+
+  session[:msg] = "Color product used"
+  redirect "/inventories/#{params[:inv_name].gsub(' ', '%20')}" 
+end
+
+# should the classes be defined at the top of the file?
+class Inventory
+  attr_accessor :stocked_items, :name, :lines
+
+  def initialize(name, owner)
     @name = name
-    @users = user
+    @owner = owner
+    @lines = []
     @stocked_items = []
   end
 
-  def add_new_color(line, intensity, hue, count)
-    stocked_items << Color.new(line, intensity, hue, count)
+  def add_color(line, depth, tone, count)
+    color = color_stocked?(line, depth, tone)
+    if color
+      total = color.count.to_i + count.to_i
+      color.count = total
+    else
+      add_new_color(line, depth, tone, count)
+    end
+  end
+
+  def use_color(line, depth, tone)
+    color = color_stocked?(line, depth, tone)
+    total = color.count.to_i - 1
+
+    if total <= 0
+      @stocked_items.delete_if do |color|
+        color.line == line && color.depth == depth && color.tone == tone
+      end
+    else
+      color.count = total.to_s
+    end
+  end
+
+  private
+
+  def color_stocked?(line, depth, tone)
+    @stocked_items.find do |color|
+      color.line == line && color.depth == depth && color.tone == tone
+    end
+  end
+
+  def add_new_color(line, depth, tone, count)
+    stocked_items << Color.new(line, depth, tone, count)
   end
 end
 
-class Product
-end
+class Color
+  attr_accessor :line, :depth, :tone, :count
 
-class Color < Product
-  attr_accessor :line, :intensity, :hue, :count
-
-  def initialize(line, intensity, hue, count)
+  def initialize(line, depth, tone, count)
     @line = line
-    @intensity = intensity
-    @hue = hue
+    @depth = depth
+    @tone = tone
     @count = count
+  end
+
+  def to_s
+    "#{line}_#{depth}_#{tone}"
   end
 end
 

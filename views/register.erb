@@ -1,27 +1,24 @@
-<% if session[:msg] %>
-  <p class="flash"><%= session.delete(:msg) %></p>
-<% end %>
+<h2>Create an Account</h2>
+<form action="/register" method="post" class="register">
+  <div>
+    <label for="name">What is your first name?</label>
+    <input type="text" name="name" id="name">
+  </div>
 
-<form action="/register" method="post">
-  <label> 
-    What is your name?:
-    <input type="text" name="name">
-  </label>
+  <div>
+    <label for="username">Username:</label>
+    <input type="text" name="username" id="username">
+  </div>
 
-  <label>
-    Please enter a username:
-    <input type="text" name="username">
-  </label>
+  <div>
+    <label for="password">Password:</label>
+    <input type="password" name="password" id="password">
+  </div>
 
-  <label>
-    Please enter a password:
-    <input type="password" name="password">
-  </label>
-
-  <label>
-    Confirm password:
-    <input type="password" name="password2">
-  </label>
+  <div>
+    <label for="password2">Confirm Password:</label>
+    <input type="password" name="password2" id="password2">
+  </div>
 
   <input type="submit" value="Register">
 </form>

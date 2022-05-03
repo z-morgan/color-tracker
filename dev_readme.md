@@ -32,3 +32,16 @@ verbs:
   Steps:
   - create a homepage
   - create a way to retreive and dispay data from a yaml file
+
+
+
+  Next steps:
+  - sanatize user input for html and js
+  - valitate user input for non-word characters and underscores
+  - add the ability to handle multiple pages of colors in a line
+  - add the ability to handle multiple pages of color lines
+
+
+
+notes:
+- B/c using testing environment when testing, not testing bcrypt password creation or authentication.
