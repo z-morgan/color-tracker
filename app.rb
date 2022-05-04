@@ -5,7 +5,7 @@ unless ENV["RACK_ENV"] == "production"
   set :port, 4000
 end
 
-require 'sinatra/reloader'
+require 'sinatra/reloader' if development?
 require 'tilt/erubis'
 require 'yaml'
 require 'bcrypt'
