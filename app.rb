@@ -1,6 +1,10 @@
 require 'sinatra'
-set :server, ['webrick', 'puma']
-set :port, 4000
+
+unless ENV["RACK_ENV"] == "production"
+  set :server, ['webrick', 'puma']
+  set :port, 4000
+end
+
 require 'sinatra/reloader'
 require 'tilt/erubis'
 require 'yaml'
