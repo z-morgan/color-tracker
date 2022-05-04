@@ -160,6 +160,14 @@ class AppTest < Minitest::Test
     assert_includes last_response.body, "My New Inventory"
   end
 
+  def test_add_invalid_inventory_name
+    post "/inventories/new", { new_inventory: "My_New_Inventory" }, signed_in
+    assert_equal 422, last_response.status
+    assert_equal "text/html;charset=utf-8", last_response["Content-Type"]
+    assert_includes last_response.body, "The name can only have letters, "\
+    "numbers, spaces, dashes, periods, and apostrophies."
+  end
+
   def test_viewing_inventory
     get "/inventories/Mr.%20Admin's%201st%20Inventory", {}, signed_in
     assert_equal 200, last_response.status
@@ -228,7 +236,7 @@ class AppTest < Minitest::Test
 
   def test_add_new_line
     post "/inventories/Mr.%20Admin's%201st%20Inventory/new-line", \
-      { line: "cosmoprof" }, signed_in
+      { line: "Cosmoprof" }, signed_in
     assert_equal 302, last_response.status
     assert_equal "text/html;charset=utf-8", last_response["Content-Type"]
     assert_equal "Color line added.", session[:msg]
@@ -237,6 +245,23 @@ class AppTest < Minitest::Test
     assert_equal 200, last_response.status
     assert_equal "text/html;charset=utf-8", last_response["Content-Type"]
     assert_includes last_response.body, "Cosmoprof"
+  end
+
+  def test_add_invalid_line
+    post "/inventories/Mr.%20Admin's%201st%20Inventory/new-line", \
+      { line: "Cosmoprof_and_company" }, signed_in
+    assert_equal 422, last_response.status
+    assert_equal "text/html;charset=utf-8", last_response["Content-Type"]
+    assert_includes last_response.body, "The name can only have letters, numbers,"\
+    " spaces, dashes, periods, and apostrophies."
+  end
+
+  def test_add_duplicate_line
+    post "/inventories/Mr.%20Admin's%201st%20Inventory/new-line", \
+      { line: "Wella" }, signed_in
+    assert_equal 422, last_response.status
+    assert_equal "text/html;charset=utf-8", last_response["Content-Type"]
+    assert_includes last_response.body, "That line already exists!"
   end
 
   def test_use_color_1_of_4
@@ -292,5 +317,4 @@ class AppTest < Minitest::Test
       { attribute: "depth", order: "descending" }
     assert_match /8.+6/m, last_response.body
   end
-
 end

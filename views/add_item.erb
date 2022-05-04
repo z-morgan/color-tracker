@@ -2,12 +2,12 @@
   <form action="/inventories/<%= @inventory.name %>" method="get" class="sort">
       <label>Sort inventory: </label>
       <select name="attribute">
-        <option value="depth" <%= 'selected' if @attribute == "depth" %>>Depth</option>
-        <option value="tone" <%= 'selected' if @attribute == "tone" %>>Tone</option>
+        <option value="depth" <%== 'selected' if @attribute == "depth" %>>Depth</option>
+        <option value="tone" <%== 'selected' if @attribute == "tone" %>>Tone</option>
       </select>
       <select name="order">
-        <option value="ascending" <%= 'selected' if @order == "ascending" %>>Low to High</option>
-        <option value="descending" <%= 'selected' if @order == "descending" %>>High to Low</option>
+        <option value="ascending" <%== 'selected' if @order == "ascending" %>>Low to High</option>
+        <option value="descending" <%== 'selected' if @order == "descending" %>>High to Low</option>
       </select>
       <input type="submit" value="Sort">
   </form>
@@ -41,7 +41,7 @@
             </tr>
             <tr class="sort-indicator">
               <td></td>
-              <td><%= @indicator %></td>
+              <td><%== @indicator %></td>
               <td></td>
               <td></td>
             </tr>

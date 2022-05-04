@@ -85,6 +85,7 @@ div.tools {
   border-bottom: 1px solid grey;
   padding: 1rem 0;
   text-align: center;
+  border-radius: 8px;
   background-color: white;
 }
 
@@ -110,12 +111,11 @@ form.new-line {
   padding-top: 1rem;
 }
 
-div.inventory-body {
+/* div.inventory-body {
   text-align: center;
-  height: 600px;
-  
+  height: 720px;
   text-align: center;
-}
+} */
 
 div.inventory-backing {
   background-color: lightgrey;
@@ -131,7 +131,7 @@ div.inventory-backing {
 div.inv-table {
   display: inline-block;
   width: 20rem;
-  height: auto;
+  height: 500px;
   padding: 3rem;
   margin: 2rem 1rem;
   border-radius: 8px;

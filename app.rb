@@ -9,7 +9,10 @@ require 'bcrypt'
 configure do
   enable :sessions
   set :session_secret, "secret" # this should be some random value if actually deploying app
+  set :erb, :escape_html => true
 end
+
+####### Route helper methods #######
 
 def data_path
   if ENV["RACK_ENV"] == "test"
@@ -106,6 +109,12 @@ def validate_color_inputs
   end
 end
 
+def invalid_object_name?(obj)
+  obj == '' || obj =~ /[^a-z0-9' \-\.]/i
+end
+
+####### Routes and Filters #######
+
 before do
   unless request.path_info =~ /(signin|register)/
     verify_signed_in
@@ -140,7 +149,7 @@ post '/signin' do
   if File.exist?("#{data_path}/#{username}.yml")
     @user = retrieve_user("#{username}.yml")
 
-    if @user.username == username && authentic_password? # this line will be updated w/ BCrypt inclusion
+    if @user.username == username && authentic_password?
       session[:username] = username
       session[:name] = @user.name
       session[:msg] = "Hello #{@user.name}!"
@@ -190,15 +199,16 @@ end
 
 post '/inventories/new' do
   name = params[:new_inventory]
-  unless name.empty?
-    @user.inventories[name] = Inventory.new(name, @user.name)
-    save_user_to_yaml(@user)
-
-    session[:msg] = "Inventory Added."
-    redirect '/inventories'
-  else
-    redirect '/inventories'
+  if invalid_object_name?(name)
+    session[:msg] = "The name can only have letters, numbers, spaces, dashes, periods, and apostrophies."
+    halt 422, (erb :new_inventory)
   end
+  
+  @user.inventories[name] = Inventory.new(name, @user.name)
+  save_user_to_yaml(@user)
+
+  session[:msg] = "Inventory Added."
+  redirect '/inventories'
 end
 
 get '/inventories/:inv_name' do 
@@ -213,12 +223,19 @@ get '/inventories/:inv_name/new-line' do
   erb :new_line
 end
 
-# this route will need to ensure that the user does not input underscores, 
-# or it will break the /use method.
 post '/inventories/:inv_name/new-line' do
   setup_inventory_objects
-  new_line = params[:line].capitalize
-  @lines << new_line unless @lines.include?(new_line) # add an error msg if unless?
+  new_line = params[:line]
+  if invalid_object_name?(new_line)
+    session[:msg] = "The name can only have letters, numbers, "\
+    "spaces, dashes, periods, and apostrophies."
+    halt 422, (erb :new_line)
+  elsif @lines.include?(new_line)
+    session[:msg] = "That line already exists!"
+    halt 422, (erb :new_line)
+  end
+
+  @lines << new_line
   save_user_to_yaml(@user)
 
   session[:msg] = "Color line added."
@@ -256,7 +273,8 @@ post "/inventories/:inv_name/use" do
   redirect "/inventories/#{params[:inv_name].gsub(' ', '%20')}" 
 end
 
-# should the classes be defined at the top of the file?
+####### Application Class Definitions #######
+
 class Inventory
   attr_accessor :stocked_items, :name, :lines
 

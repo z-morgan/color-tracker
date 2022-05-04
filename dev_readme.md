@@ -34,13 +34,15 @@ verbs:
   - create a way to retreive and dispay data from a yaml file
 
 
-
   Next steps:
-  - sanatize user input for html and js
-  - valitate user input for non-word characters and underscores
+  - add more criteria for an acceptable password when registering.
+    - at least 8 characters long
+    - contains two of the following: uppercase letter, digit, special character.
+    
   - add the ability to handle multiple pages of colors in a line
   - add the ability to handle multiple pages of color lines
-
+    - put navigation bottons at the bottom of the inventory-backing box, in place of the add-items form. 
+    - create a page class to handle the contents of each page? Not sure yet...
 
 
 notes:
