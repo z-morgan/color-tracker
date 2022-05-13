@@ -1,6 +1,7 @@
 Link to the app: https://salon-inventory-tracker.herokuapp.com/signin
 
 If you want to check out the app without having a setup a new account, feel free to login using this demo account:
+
 username: johngalt
 password: whoisjohngalt
 
