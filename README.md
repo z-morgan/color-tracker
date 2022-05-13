@@ -1,3 +1,5 @@
+Link to the app: https://salon-inventory-tracker.herokuapp.com/signin
+
 Salon Inventory is a web application designed to make it easier for hair dressers to manage their supply of hair color products. The application is a ruby web app built using the Sinatra web development framework. It employs ERB as the templating language for dynamically generating HTML pages using ruby code on the back-end. Passwords are secured using a bcrypt algorithm, and user input is sanatized throughout the site to protect against cross-site scripting. A comprehensive test suite is provided which uses Rack's built-in testing library.
 
 *Please Note* 
