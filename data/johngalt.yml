@@ -63,7 +63,7 @@ inventories:
       tone: '2'
     - !ruby/object:Color
       line: Wella
-      count: '8'
+      count: '6'
       depth: '6'
       tone: '3'
     - !ruby/object:Color
@@ -81,6 +81,11 @@ inventories:
       count: '3'
       depth: '7'
       tone: '33'
+    - !ruby/object:Color
+      line: Wella
+      count: '4'
+      depth: '3'
+      tone: '5'
     lines:
     - Wella
     - Difiaba

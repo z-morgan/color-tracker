@@ -1,5 +1,5 @@
 <div class="inventories-list">
-  <h2><%= session[:name] %>'s Inventories</h2>
+  <h2><%= @name %>'s Inventories</h2>
 
   <% @inventories.each do |name, _| %>
     <a href="/inventories/<%= name %>"><%= name %></a>

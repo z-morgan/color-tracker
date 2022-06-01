@@ -14,10 +14,16 @@ class AppTest < Minitest::Test
 
   def create_test_user
     @user = User.new("admin", "secret", "Mr. Admin")
-    @user.inventories["Mr. Admin's 1st Inventory"] = Inventory.new("Mr. Admin's 1st Inventory", "admin")
-    @user.inventories["Mr. Admin's 2nd inventory"] = Inventory.new("Mr. Admin's 2nd inventory", "admin")
+    @user.inventories["Mr. Admin's 1st Inventory"] = Inventory.new("Mr. Admin's 1st Inventory")
+    @user.inventories["Mr. Admin's 2nd inventory"] = Inventory.new("Mr. Admin's 2nd inventory")
     populate_inventories(@user)
     save_user_to_yaml(@user)
+  end
+
+  def save_user_to_yaml(user)
+    basename = "#{user.username}.yml"
+    path = File.join(data_path, basename)
+    File.open(path, "w") { |f| f.write(user.to_yaml) }
   end
 
   def populate_inventories(user)
@@ -42,6 +48,7 @@ class AppTest < Minitest::Test
 
   def setup
     FileUtils.mkdir_p(data_path)
+    FileUtils.touch(File.join(data_path, "candidate_user.yml"))
     create_test_user
   end
 
@@ -189,7 +196,7 @@ class AppTest < Minitest::Test
 
   def test_add_item_no_lines
     @user = User.new("admin2", "secret2", "admin2")
-    @user.inventories["Test Inventory"] = Inventory.new("Test Inventory", "admin2")
+    @user.inventories["Test Inventory"] = Inventory.new("Test Inventory")
     save_user_to_yaml(@user)
 
     get "/inventories/Test%20Inventory/add", {}, {"rack.session" => { username: "admin2" } }
