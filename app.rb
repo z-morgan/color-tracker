@@ -93,8 +93,8 @@ end
 ####### Routes and Filters #######
 
 before do
-  verify_signed_in unless request.path_info =~ /(signin|register)/
   @db = init_db # this method is provided by whatever data storage library is required. 
+  verify_signed_in unless request.path_info =~ /(signin|register)/
 end
 
 after do
