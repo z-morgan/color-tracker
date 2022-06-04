@@ -2,7 +2,7 @@
 
 require 'pg'
 
-####### YamlDB-specific testing setup/teardown #######
+####### PostgresDB-specific testing setup/teardown #######
 
 module PostgresDBSetup
   def setup

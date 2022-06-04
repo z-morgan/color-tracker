@@ -7,14 +7,11 @@ require_relative '../app'
 
 class AppTest < Minitest::Test
   include Rack::Test::Methods
-  # include YamlDBSetup
   include PostgresDBSetup
 
   def app
     Sinatra::Application
   end
-
-
 
   ########### tests #############
 

@@ -10,7 +10,6 @@ require 'tilt/erubis'
 require 'bcrypt'
 require 'pry' # delete this before deployment
 
-# require_relative 'yamldb'
 require_relative 'postgresdb'
 
 configure do
