@@ -320,6 +320,11 @@ end
 ### Database Startup method ###
 
 def init_db
-  connection = PG.connect(dbname: "salon_inventory_db")
+  connection = if Sinatra::Base.production?
+                 PG.connect(ENV['DATABASE_URL'])
+               else
+                 PG.connect(dbname: "salon_inventory_db")
+               end
+               
   PostgresDB.new(connection)
 end

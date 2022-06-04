@@ -8,7 +8,7 @@ end
 require 'sinatra/reloader' if development?
 require 'tilt/erubis'
 require 'bcrypt'
-require 'pry' # delete this before deployment
+# require 'pry' # delete this before deployment
 
 require_relative 'postgresdb'
 
@@ -98,7 +98,7 @@ before do
 end
 
 after do
-  # @db.disconnect  # this doesn't work with yamldb
+  @db.disconnect  # this method doesn't work with yamldb
   headers["Content-Type"] = "text/html;charset=utf-8"
 end
 
