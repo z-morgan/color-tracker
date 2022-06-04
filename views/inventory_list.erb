@@ -1,7 +1,7 @@
 <div class="inventories-list">
-  <h2><%= @name %>'s Inventories</h2>
+  <h2><%= @first_name %>'s Inventories</h2>
 
-  <% @inventories.each do |name, _| %>
+  <% @inventories.each do |name| %>
     <a href="/inventories/<%= name %>"><%= name %></a>
   <% end %>
 

@@ -1,5 +1,5 @@
 <div class="tools">
-  <form action="/inventories/<%= @inventory.name %>" method="get" class="sort">
+  <form action="/inventories/<%= @inv_name %>" method="get" class="sort">
       <label>Sort inventory: </label>
       <select name="attribute">
         <option value="depth" <%== 'selected' if @attribute == "depth" %>>Depth</option>
@@ -14,11 +14,11 @@
 
   <div class="new-items">
     <label for="add-item">Received new product?</label>
-    <a href="/inventories/<%= @inventory.name %>/add" id="add-item">Add items here!</a>
+    <a href="/inventories/<%= @inv_name %>/add" id="add-item">Add items here!</a>
   </div>
 
   <div class="new-line">
-    <a href="/inventories/<%= @inventory.name %>/new-line">Add a new color line</a>
+    <a href="/inventories/<%= @inv_name %>/new-line">Add a new color line</a>
   </div>
 </div>
 
@@ -52,7 +52,7 @@
               <% if color.line == line %>
                 <tr>
                   <td>
-                    <form action="/inventories/<%= @inventory.name %>/use" method="post">
+                    <form action="/inventories/<%= @inv_name %>/use" method="post">
                       <button type="submit" name="color" value="<%= color.to_s %>">Use One</button>
                     </form>
                   </td>
@@ -78,7 +78,7 @@
   <% end %>
 </div>
 
-<form action="/inventories/<%= @inventory.name %>/add" method="post" class="new-item">
+<form action="/inventories/<%= @inv_name %>/add" method="post" class="new-item">
   <label>
     Depth/Tone:
     <input type="number" name="depth" min="1" max="11" required>
@@ -102,7 +102,7 @@
 
   <input type="submit" value="Add Item">
 </form>
-<form action="/inventories/<%= @inventory.name %>" method="get">
+<form action="/inventories/<%= @inv_name %>" method="get">
   <input type="submit" value="Done Adding Items">
 </form>
 </fieldset>

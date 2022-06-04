@@ -10,7 +10,8 @@ require 'tilt/erubis'
 require 'bcrypt'
 require 'pry' # delete this before deployment
 
-require_relative 'yamldb'
+# require_relative 'yamldb'
+require_relative 'postgresdb'
 
 configure do
   enable :sessions
@@ -98,6 +99,7 @@ before do
 end
 
 after do
+  # @db.disconnect  # this doesn't work with yamldb
   headers["Content-Type"] = "text/html;charset=utf-8"
 end
 
@@ -111,7 +113,8 @@ end
 
 get '/signin' do
   if session[:username]
-    session[:msg] = "Welcome back #{@db.user_first_name}!"
+    username = session[:username]
+    session[:msg] = "Welcome back #{@db.user_first_name(username)}!"
     redirect '/inventories'
   else
     erb :signin
@@ -122,9 +125,9 @@ post '/signin' do
   username = params[:username]
   if @db.user_exists?(username)
 
-    if authentic_password?(@db.user_password)
+    if authentic_password?(@db.user_password(username))
       session[:username] = username
-      session[:msg] = "Hello #{@db.user_first_name}!"
+      session[:msg] = "Hello #{@db.user_first_name(username)}!"
       redirect '/inventories'
     end
     session[:msg] = "Wrong username or password"
@@ -138,7 +141,8 @@ post '/signin' do
 end
 
 post '/signout' do
-  session[:msg] = "#{@db.user_first_name} has signed out. See you soon!"
+  username = session[:username]
+  session[:msg] = "#{@db.user_first_name(username)} has signed out. See you soon!"
   session.delete(:username)
   redirect '/signin'
 end
@@ -160,8 +164,9 @@ post '/register' do
 end
 
 get '/inventories' do
-  @inventories = @db.user_inventories
-  @name = @db.user_first_name
+  username = session[:username]
+  @inventories = @db.user_inventories(username)
+  @first_name = @db.user_first_name(username)
   erb :inventory_list
 end
 
@@ -170,258 +175,79 @@ get '/inventories/new' do
 end
 
 post '/inventories/new' do
-  name = params[:new_inventory]
-  if invalid_object_name?(name)
+  inv_name = params[:new_inventory]
+  if invalid_object_name?(inv_name)
     session[:msg] = "The name can only have letters, numbers, spaces, dashes, periods, and apostrophies."
     halt 422, (erb :new_inventory)
   end
 
-  @db.create_new_inventory(name)
+  @db.create_new_inventory(inv_name, session[:username])
   session[:msg] = "Inventory Added."
   redirect '/inventories'
 end
 
 get '/inventories/:inv_name' do
-  @inventory = @db.retrieve_inventory(params[:inv_name])
-  @lines = @db.retrieve_lines(params[:inv_name])
-  @colors = @db.retrieve_colors(params[:inv_name])
+  @inv_name = params[:inv_name]
+  @lines = @db.retrieve_lines(params[:inv_name], session[:username])
+  @colors = @db.retrieve_colors(params[:inv_name], session[:username])
 
   sort_inventory(@colors)
   erb :inventory
 end
 
 get '/inventories/:inv_name/new-line' do
-  @inventory = @db.retrieve_inventory(params[:inv_name])
+  @inv_name = params[:inv_name]
   erb :new_line
 end
 
 post '/inventories/:inv_name/new-line' do
-  @inventory = @db.retrieve_inventory(params[:inv_name])
+  @inv_name = params[:inv_name]
   new_line = params[:line]
   if invalid_object_name?(new_line)
     session[:msg] = "The name can only have letters, numbers, "\
     "spaces, dashes, periods, and apostrophies."
     halt 422, (erb :new_line)
-  elsif @db.duplicate_line?(new_line, params[:inv_name])
+  elsif @db.line_exists_in_inventory?(new_line, params[:inv_name], session[:username])
     session[:msg] = "That line already exists!"
     halt 422, (erb :new_line)
   end
 
-  @db.add_new_color_line(new_line, params[:inv_name])
+  @db.add_new_color_line(new_line, params[:inv_name], session[:username])
   session[:msg] = "Color line added."
   redirect "/inventories/#{params[:inv_name].gsub(' ', '%20')}"
 end
 
 get '/inventories/:inv_name/add' do
-  @inventory = @db.retrieve_inventory(params[:inv_name])
-  @lines = @db.retrieve_lines(params[:inv_name])
-  @colors = @db.retrieve_colors(params[:inv_name])
+  @inv_name = params[:inv_name]
+  @lines = @db.retrieve_lines(params[:inv_name], session[:username])
+  @colors = @db.retrieve_colors(params[:inv_name], session[:username])
 
-  if @db.no_lines?(params[:inv_name])
+  if @db.no_lines?(params[:inv_name], session[:username])
     session[:msg] = "You need to add a color line first."
     redirect "/inventories/#{params[:inv_name].gsub(' ', '%20')}"
   else
-    sort_inventory(@db.retrieve_colors(params[:inv_name]))
+    sort_inventory(@db.retrieve_colors(params[:inv_name], session[:username]))
     erb :add_item
   end
 end
 
 post '/inventories/:inv_name/add' do
-  @inventory = @db.retrieve_inventory(params[:inv_name])
-  @lines = @db.retrieve_lines(params[:inv_name])
-  @colors = @db.retrieve_colors(params[:inv_name])
-
+  @inv_name = params[:inv_name]
+  @lines = @db.retrieve_lines(params[:inv_name], session[:username])
+  # @colors = @db.retrieve_colors(params[:inv_name], session[:username])
+  
   validate_color_inputs
-  @db.add_color(params[:line], params[:depth], params[:tone], params[:count], params[:inv_name])
-  sort_inventory(@db.retrieve_colors(params[:inv_name]))
+  @db.add_color(params[:line], params[:depth], params[:tone], params[:count], params[:inv_name], session[:username])
+  @colors = @db.retrieve_colors(params[:inv_name], session[:username])
+  sort_inventory(@colors)
 
   session[:msg] = "Color product added."
   erb :add_item
 end
 
 post "/inventories/:inv_name/use" do
-  @db.use_color(params[:inv_name], *(params[:color].split("_")))
+  @db.use_color(session[:username], params[:inv_name], *(params[:color].split("_")))
 
   session[:msg] = "Color product used"
   redirect "/inventories/#{params[:inv_name].gsub(' ', '%20')}" 
-end
-
-####### Application Class Definitions #######
-
-class Inventory
-  attr_accessor :stocked_items, :name, :lines
-
-  def initialize(name)
-    @name = name
-    @lines = []
-    @stocked_items = []
-  end
-
-  def add_color(line, depth, tone, count)
-    color = color_stocked?(line, depth, tone)
-    if color
-      total = color.count.to_i + count.to_i
-      color.count = total
-    else
-      add_new_color(line, depth, tone, count)
-    end
-  end
-
-  def use_color(line, depth, tone)
-    color = color_stocked?(line, depth, tone)
-    total = color.count.to_i - 1
-
-    if total <= 0
-      @stocked_items.delete_if do |color|
-        color.line == line && color.depth == depth && color.tone == tone
-      end
-    else
-      color.count = total.to_s
-    end
-  end
-
-  private
-
-  def color_stocked?(line, depth, tone)
-    @stocked_items.find do |color|
-      color.line == line && color.depth == depth && color.tone == tone
-    end
-  end
-
-  def add_new_color(line, depth, tone, count)
-    stocked_items << Color.new(line, depth, tone, count)
-  end
-end
-
-class Color
-  attr_accessor :line, :depth, :tone, :count
-
-  def initialize(line, depth, tone, count)
-    @line = line
-    @depth = depth
-    @tone = tone
-    @count = count
-  end
-
-  def to_s
-    "#{line}_#{depth}_#{tone}"
-  end
-end
-
-class User
-  attr_accessor :inventories, :username, :password, :name
-
-  def initialize(username, password, name)
-    @username = username
-    @password = password
-    @name = name
-    @inventories = {}
-  end
-end
-
-### YamlDB library ###
-
-def init_db
-  username = session[:username]
-  username = "candidate_user" if username.nil?
-  if Dir.glob(File.join(data_path, username) + ".yml").empty?
-    username = "candidate_user"
-  end
-
-  YamlDB.new(username)
-end
-
-class YamlDB
-  def initialize(username)
-    @user = retrieve_user("#{username}.yml")
-  end
-
-  def user_password
-    @user.password
-  end
-
-  def user_exists?(username)
-    unless Dir.glob(File.join(data_path, username) + ".yml").empty?
-      @user = retrieve_user("#{username}.yml")
-    end
-
-    @user.username == username
-  end
-
-  def user_first_name
-    @user.name
-  end
-
-  def user_inventories
-    @user.inventories
-  end
-
-  def create_new_inventory(name)
-    @user.inventories[name] = Inventory.new(name)
-    save_user_to_yaml(@user)
-  end
-
-  def duplicate_line?(name, inv_name)
-    retrieve_lines(inv_name).include?(name)
-  end
-
-  def add_new_color_line(name, inv_name)
-    retrieve_lines(inv_name) << name
-    save_user_to_yaml(@user)
-  end
-
-  def add_color(line, depth, tone, count, inv_name)
-    retrieve_inventory(inv_name).add_color(line, depth, tone, count)
-    save_user_to_yaml(@user)
-  end
-
-  def use_color(inv_name, line, depth, tone)
-    inventory = retrieve_inventory(inv_name)
-    inventory.use_color(line, depth, tone)
-    save_user_to_yaml(@user)
-  end
-
-  def no_lines?(inv_name)
-    retrieve_lines(inv_name).empty?
-  end
-
-  def retrieve_inventory(inv_name)
-    @user.inventories[inv_name]
-  end
-
-  def retrieve_lines(inv_name)
-    @user.inventories[inv_name].lines
-  end
-
-  def retrieve_colors(inv_name)
-    @user.inventories[inv_name].stocked_items
-  end
-
-  def create_user(username, password, name)
-    unless ENV["RACK_ENV"] == "test"
-      password = BCrypt::Password.create(password)
-    end
-  
-    user = User.new(username, password, name)
-    save_user_to_yaml(user)
-  end
-
-  private
-
-  def save_user_to_yaml(user)
-    basename = "#{user.username}.yml"
-    path = File.join(data_path, basename)
-    File.open(path, "w") { |f| f.write(user.to_yaml) }
-  end
-
-  def setup_inventory_objects(inv_name)
-    @inventory = @user.inventories[inv_name]
-    @lines = @inventory.lines
-    @colors = @inventory.stocked_items
-  end
-
-  def retrieve_user(user)
-    path = File.join(data_path, user)
-    YAML.load_file(path, fallback: User.new("candidate_user", nil, nil))
-  end
 end

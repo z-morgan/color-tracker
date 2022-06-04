@@ -7,54 +7,14 @@ require_relative '../app'
 
 class AppTest < Minitest::Test
   include Rack::Test::Methods
+  # include YamlDBSetup
+  include PostgresDBSetup
 
   def app
     Sinatra::Application
   end
 
-  def create_test_user
-    @user = User.new("admin", "secret", "Mr. Admin")
-    @user.inventories["Mr. Admin's 1st Inventory"] = Inventory.new("Mr. Admin's 1st Inventory")
-    @user.inventories["Mr. Admin's 2nd inventory"] = Inventory.new("Mr. Admin's 2nd inventory")
-    populate_inventories(@user)
-    save_user_to_yaml(@user)
-  end
 
-  def save_user_to_yaml(user)
-    basename = "#{user.username}.yml"
-    path = File.join(data_path, basename)
-    File.open(path, "w") { |f| f.write(user.to_yaml) }
-  end
-
-  def populate_inventories(user)
-    user.inventories.each do |_, inv|
-      inv.add_color("Wella", '10', '2', '1')
-      inv.add_color("Difiaba", '8', '3', '4')
-    end
-
-    user.inventories.each do |_, inv|
-      inv.lines << "Wella"
-      inv.lines << "Difiaba"
-    end
-  end
-
-  def session
-    last_request.env["rack.session"]
-  end
-
-  def signed_in
-    { "rack.session" => { username: "admin", name: "Mr. Admin" } }
-  end
-
-  def setup
-    FileUtils.mkdir_p(data_path)
-    FileUtils.touch(File.join(data_path, "candidate_user.yml"))
-    create_test_user
-  end
-
-  def teardown
-    FileUtils.rm_rf(data_path)
-  end
 
   ########### tests #############
 
@@ -195,9 +155,7 @@ class AppTest < Minitest::Test
   end
 
   def test_add_item_no_lines
-    @user = User.new("admin2", "secret2", "admin2")
-    @user.inventories["Test Inventory"] = Inventory.new("Test Inventory")
-    save_user_to_yaml(@user)
+    setup_for_test_add_item_no_lines
 
     get "/inventories/Test%20Inventory/add", {}, {"rack.session" => { username: "admin2" } }
     assert_equal 302, last_response.status
@@ -212,7 +170,7 @@ class AppTest < Minitest::Test
 
   def test_add_new_color
     post "/inventories/Mr.%20Admin's%201st%20Inventory/add", \
-      { line: "Wella", depth: "5", tone: "3", count: "2" }, signed_in
+      { line: "Wella", depth: '5', tone: '3', count: 2 }, signed_in
     assert_equal 200, last_response.status
     assert_equal "text/html;charset=utf-8", last_response["Content-Type"]
     assert_includes last_response.body, %q(<td>5/3</td>)
