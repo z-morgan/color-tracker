@@ -1,5 +1,3 @@
--- database name: salon_inventory_db
-
 CREATE TABLE users(
   id serial PRIMARY KEY,
   username varchar(50) NOT NULL UNIQUE,
@@ -34,18 +32,3 @@ CREATE TABLE colors(
   count int NOT NULL,
   CHECK (count >= 0)
 );
-
-INSERT INTO users (username, password, first_name)
-VALUES ('johngalt', 'whoisjohngalt', 'John');
-
-INSERT INTO inventories (user_id, name)
-VALUES (1, 'John''s 1st Inventory');
-
-INSERT INTO lines ( name)
-VALUES ('Wella');
-
-INSERT INTO inventories_lines (inventory_id, line_id)
-VALUES (1, 1);
-
-INSERT INTO colors (inventory_id, line_id, depth, tone, count)
-VALUES (1, 1, '10', '22', 5), (1, 1, '4', '6', 5);

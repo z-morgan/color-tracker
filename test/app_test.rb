@@ -279,4 +279,16 @@ class AppTest < Minitest::Test
       { attribute: "depth", order: "descending" }
     assert_match /8.+6/m, last_response.body
   end
+
+  def test_demo_account
+    post '/signin', {username: "stylishowl", password: "$2a$12$SmJQN5GEoz/4ceGhMK" \
+                                                "hGpuKJ1l0194Hczs.DZrRX5IgkNtG3Xk5C."}
+    assert_equal 302, last_response.status
+    assert_equal "Hello Stylish Owl!", session[:msg]
+
+    get last_response["Location"]
+    assert_equal 200, last_response.status
+    assert_equal "text/html;charset=utf-8", last_response["Content-Type"]
+    assert_includes last_response.body, "Stylish Owl's Inventories"
+  end
 end

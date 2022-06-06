@@ -6,7 +6,7 @@ require 'pg'
 
 module PostgresDBSetup
   def setup
-    @test_connection = PG.connect(dbname: "salon_inventory_db")
+    @test_connection = PG.connect(dbname: "salon_inventory_db_test")
     
     sql1 = <<~SQL
       INSERT INTO users (id, username, password, first_name)
@@ -326,6 +326,8 @@ end
 def init_db
   connection = if Sinatra::Base.production?
                  PG.connect(ENV['DATABASE_URL'])
+               elsif Sinatra::Base.test?
+                 PG.connect(dbname: "salon_inventory_db_test")
                else
                  PG.connect(dbname: "salon_inventory_db")
                end

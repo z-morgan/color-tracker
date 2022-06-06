@@ -9,7 +9,7 @@ require 'sinatra/reloader' if development?
 require 'tilt/erubis'
 require 'bcrypt'
 
-require_relative 'postgresdb'
+require_relative 'lib/postgresdb'
 
 configure do
   enable :sessions
@@ -122,7 +122,7 @@ end
 post '/signin' do
   username = params[:username]
   @db.reset_demo_account if username == 'stylishowl'
-  
+
   if @db.user_exists?(username)
 
     if authentic_password?(@db.user_password(username))
