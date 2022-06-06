@@ -124,12 +124,6 @@ fieldset.new-line-form {
   width: 85%;
 }
 
-/* div.inventory-body {
-  text-align: center;
-  height: 720px;
-  text-align: center;
-} */
-
 div.inventory-backing {
   background-color: lightgrey;
   box-sizing: border-box;
