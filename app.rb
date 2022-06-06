@@ -127,6 +127,7 @@ post '/signin' do
     if authentic_password?(@db.user_password(username))
       session[:username] = username
       session[:msg] = "Hello #{@db.user_first_name(username)}!"
+      @db.reset_demo_account if username == 'stylishowl'
       redirect '/inventories'
     end
     session[:msg] = "Wrong username or password"

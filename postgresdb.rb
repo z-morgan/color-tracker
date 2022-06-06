@@ -97,6 +97,14 @@ class PostgresDB
     @connection = connection
   end
 
+  def reset_demo_account
+    statements_arr = File.open("data/stylishowl.sql", "r").read.split("\n\n")
+    
+    statements_arr.each do |sql|
+      @connection.exec_params(sql)
+    end
+  end
+
   def user_password(username)
     sql = "SELECT password FROM users WHERE username = $1;"
     @connection.exec_params(sql, [username]).values[0][0]
