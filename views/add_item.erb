@@ -22,6 +22,42 @@
   </div>
 </div>
 
+<fieldset class="new-line-form">
+<div class="error-flash">
+  <% if session[:invalid_color] %>
+    <span class="error-flash"><%= session.delete(:invalid_color) %></span>
+  <% end %>
+</div>
+
+<form action="/inventories/<%= @inv_name %>/add" method="post" class="new-item">
+  <label>
+    Depth/Tone:
+    <input type="number" name="depth" min="1" max="11" required>
+    /
+    <input type="number" name="tone" min="0" max="99" required>
+  </label>
+
+  <label>
+    Color line
+    <select name="line">
+      <% @lines.each do |line| %>
+        <option><%= line %></option>
+      <% end %>
+    </select>
+  </label>
+
+  <label>
+    Count
+    <input type="number" name="count" value="1" min="1">
+  </label>
+
+  <input type="submit" value="Add Item">
+</form>
+<form action="/inventories/<%= @inv_name %>" method="get">
+  <input type="submit" value="Done Adding Items">
+</form>
+</fieldset>
+
 <% if @lines.empty? %>
   <p>You don't have any color lines yet. To create a new line, select "Add a new color line" in the tool bar.</p>
 <% else %>
@@ -71,38 +107,3 @@
 
 <br>
 <br>
-<fieldset>
-<div class="error-flash">
-  <% if session[:invalid_color] %>
-    <span class="error-flash"><%= session.delete(:invalid_color) %></span>
-  <% end %>
-</div>
-
-<form action="/inventories/<%= @inv_name %>/add" method="post" class="new-item">
-  <label>
-    Depth/Tone:
-    <input type="number" name="depth" min="1" max="11" required>
-    /
-    <input type="number" name="tone" min="0" max="99" required>
-  </label>
-
-  <label>
-    Color line
-    <select name="line">
-      <% @lines.each do |line| %>
-        <option><%= line %></option>
-      <% end %>
-    </select>
-  </label>
-
-  <label>
-    Count
-    <input type="number" name="count" value="1" min="1">
-  </label>
-
-  <input type="submit" value="Add Item">
-</form>
-<form action="/inventories/<%= @inv_name %>" method="get">
-  <input type="submit" value="Done Adding Items">
-</form>
-</fieldset>

@@ -72,10 +72,6 @@ module PostgresDBSetup
     @test_connection.exec(sql1)
     @test_connection.exec(sql2)
   end
-
-  # def teardown_for_test_add_item_no_lines
-  #   @test_connection.exec("DELETE FROM users WHERE id = 999999;")
-  # end 
 end
 
 ####### Application Class Definitions #######
@@ -317,7 +313,7 @@ class PostgresDB
   end
 end
 
-### Database Startup method ###
+####### Database Startup method #######
 
 def init_db
   connection = if Sinatra::Base.production?

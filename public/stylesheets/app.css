@@ -111,6 +111,19 @@ form.new-line {
   padding-top: 1rem;
 }
 
+fieldset {
+  background-color: white;
+  text-align: right;
+  border-radius: 8px;
+  width: 85%;
+  margin: 1rem auto;
+}
+
+fieldset.new-line-form {
+  border-radius: 8px;
+  width: 85%;
+}
+
 /* div.inventory-body {
   text-align: center;
   height: 720px;
@@ -182,17 +195,12 @@ form.register label {
   margin: .3rem;
 }
 
-fieldset {
-  background-color: white;
-  text-align: right;
-}
-
 form.new-item {
   display: inline-block;
-  width: 70%;
+  width: 80%;
 }
 
 form.new-item + form {
   display: inline-block;
-  width: 29%;
+  width: 19%;
 }
