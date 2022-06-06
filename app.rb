@@ -8,7 +8,6 @@ end
 require 'sinatra/reloader' if development?
 require 'tilt/erubis'
 require 'bcrypt'
-# require 'pry' # delete this before deployment
 
 require_relative 'postgresdb'
 

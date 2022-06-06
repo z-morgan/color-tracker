@@ -1,7 +1,6 @@
 ### Postgres interface library ###
 
 require 'pg'
-require 'pry'
 
 ####### PostgresDB-specific testing setup/teardown #######
 
