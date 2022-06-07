@@ -22,6 +22,18 @@
   </div>
 </div>
 
+<div class="inv-page-nav">
+  <% if @inv_page > 1 %>
+    <a href="/inventories/<%= @inv_name %>?inv_page=<%= @inv_page - 1 %>" class="page-button">
+      <<< Prev Color Line</a>
+  <% end %>
+
+  <% if more_pages?(@inv_page, @max_inv_pages) %>
+    <a href="/inventories/<%= @inv_name %>?inv_page=<%= @inv_page + 1 %>" class="page-button">
+    Next Color Line >>></a>
+  <% end %>
+</div>
+
 <% if @lines.empty? %>
   <p>You don't have any color lines yet. To create a new line, select "Add a new color line" in the tool bar.</p>
 <% else %>
@@ -68,16 +80,4 @@
     </div>
   <% end %>
 <% end %>
-
-<div class="inv-page-nav">
-  <% if @inv_page > 1 %>
-    <a href="/inventories/<%= @inv_name %>?inv_page=<%= @inv_page - 1 %>" class="page-button">
-      <<< Prev Page</a>
-  <% end %>
-
-  <% if more_pages?(@inv_page, @max_inv_pages) %>
-    <a href="/inventories/<%= @inv_name %>?inv_page=<%= @inv_page + 1 %>" class="page-button">
-    Next Page >>></a>
-  <% end %>
-</div>
 

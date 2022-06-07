@@ -251,14 +251,12 @@ class PostgresDB
       WHERE u.username = $1 AND i.name = $2;
     SQL
 
-    num = @connection.exec_params(sql, [username, inv_name]).ntuples
-    num += 1 if num.odd?
-    num / 2
+    @connection.exec_params(sql, [username, inv_name]).ntuples
   end
 
   # Returns an array of strings which are line names in the inv
   def retrieve_lines(inv_name, username, page_num)
-    offset = (page_num - 1) * 2
+    offset = (page_num - 1)
 
     sql = <<~SQL
       SELECT l.name FROM lines AS l
@@ -266,7 +264,7 @@ class PostgresDB
       INNER JOIN inventories AS i ON i.id = il.inventory_id
       INNER JOIN users AS u ON u.id = i.user_id
       WHERE u.username = $1 AND i.name = $2
-      LIMIT 2 OFFSET $3;
+      LIMIT 1 OFFSET $3;
     SQL
 
     @connection.exec_params(sql, [username, inv_name, offset]).column_values(0)
