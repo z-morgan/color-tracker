@@ -203,7 +203,7 @@ class AppTest < Minitest::Test
     assert_equal "text/html;charset=utf-8", last_response["Content-Type"]
     assert_equal "Color line added.", session[:msg]
 
-    get (last_response["Location"] + "?inv_page=2")
+    get (last_response["Location"] + "?inv_page=3")
     assert_equal 200, last_response.status
     assert_equal "text/html;charset=utf-8", last_response["Content-Type"]
     assert_includes last_response.body, "Cosmoprof"
@@ -233,7 +233,7 @@ class AppTest < Minitest::Test
     assert_equal "text/html;charset=utf-8", last_response["Content-Type"]
     assert_equal "Color product used", session[:msg]
 
-    get last_response["Location"]
+    get (last_response["Location"] + "?inv_page=2")
     assert_equal 200, last_response.status
     assert_equal "text/html;charset=utf-8", last_response["Content-Type"]
     assert_includes last_response.body, %q(<td>8/3</td>)
@@ -270,12 +270,12 @@ class AppTest < Minitest::Test
     get "/inventories/Mr.%20Admin's%201st%20Inventory", \
       { attribute: "tone", order: "descending" }
     assert_match /7.+2/m, last_response.body
-
-    get "/inventories/Mr.%20Admin's%201st%20Inventory", \
+    
+    get "/inventories/Mr.%20Admin's%201st%20Inventory?inv_page=2", \
       { attribute: "depth", order: "ascending" }
     assert_match /6.+8/m, last_response.body
-
-    get "/inventories/Mr.%20Admin's%201st%20Inventory", \
+    
+    get "/inventories/Mr.%20Admin's%201st%20Inventory?inv_page=2", \
       { attribute: "depth", order: "descending" }
     assert_match /8.+6/m, last_response.body
   end

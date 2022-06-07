@@ -27,6 +27,15 @@ helpers do
   def more_pages?(page, max_pages)
     max_pages > page
   end
+
+  def sort_indicator
+    case session[:sort]
+    when ["depth", "ascending"]  then %q(<div class="depth">↓</div>)
+    when ["depth", "descending"] then %q(<div class="depth">↑</div>)
+    when ["tone", "ascending"]   then %q(<div class="tone">↓</div>)
+    when ["tone", "descending"]  then %q(<div class="tone">↑</div>)
+    end
+  end
 end
 
 ####### Application helper methods #######
@@ -70,24 +79,6 @@ end
 
 def sort_by_depth!(colors_arr)
   colors_arr.sort_by! { |color| color.depth.to_i }
-end
-
-def sort_inventory(colors_arr)
-  persist_sort_strategy
-  case session[:sort]
-  when ["depth", "ascending"]
-    sort_by_depth!(colors_arr)
-    @indicator = %q(<div class="depth">↓</div>)
-  when ["depth", "descending"]
-    sort_by_depth!(colors_arr).reverse!
-    @indicator = %q(<div class="depth">↑</div>)
-  when ["tone", "ascending"]
-    colors_arr.sort_by!(&:tone)
-    @indicator = %q(<div class="tone">↓</div>)
-  when ["tone", "descending"]
-    colors_arr.sort_by!(&:tone).reverse!
-    @indicator = %q(<div class="tone">↑</div>)
-  end
 end
 
 def validate_color_inputs
@@ -200,15 +191,18 @@ end
 
 get '/inventories/:inv_name' do
   @inv_name = params[:inv_name]
+  persist_sort_strategy
 
   params[:inv_page] ||= 1
   @inv_page = params[:inv_page].to_i
   @max_inv_pages = @db.count_inv_pages(params[:inv_name], session[:username])
-  @lines = @db.retrieve_lines(params[:inv_name], session[:username], @inv_page)
+  @line_name = @db.retrieve_line_name(params[:inv_name], session[:username], @inv_page)
+  
+  params[:line_page] ||= 1
+  @line_page = params[:line_page].to_i
+  @max_line_pages = @db.count_line_pages(params[:inv_name], session[:username], @line_name[0])
+  @colors = @db.retrieve_colors(params[:inv_name], session[:username], @line_name[0], @line_page, session[:sort])
 
-  @colors = @db.retrieve_colors(params[:inv_name], session[:username])
-
-  sort_inventory(@colors)
   erb :inventory
 end
 
@@ -236,36 +230,41 @@ end
 
 get '/inventories/:inv_name/add' do
   @inv_name = params[:inv_name]
+  persist_sort_strategy
 
   params[:inv_page] ||= 1
   @inv_page = params[:inv_page].to_i
   @max_inv_pages = @db.count_inv_pages(params[:inv_name], session[:username])
-  @lines = @db.retrieve_lines(params[:inv_name], session[:username], @inv_page)
-
-  @colors = @db.retrieve_colors(params[:inv_name], session[:username])
+  @line_name = @db.retrieve_line_name(params[:inv_name], session[:username], @inv_page)
 
   if @db.no_lines?(params[:inv_name], session[:username])
     session[:msg] = "You need to add a color line first."
     redirect "/inventories/#{params[:inv_name].gsub(' ', '%20')}"
   else
-    sort_inventory(@db.retrieve_colors(params[:inv_name], session[:username]))
+    params[:line_page] ||= 1
+    @line_page = params[:line_page].to_i
+    @max_line_pages = @db.count_line_pages(params[:inv_name], session[:username], @line_name[0])
+    @colors = @db.retrieve_colors(params[:inv_name], session[:username], @line_name[0], @line_page, session[:sort])
     erb :add_item
   end
 end
 
 post '/inventories/:inv_name/add' do
   @inv_name = params[:inv_name]
+  persist_sort_strategy
 
   params[:inv_page] ||= 1
   @inv_page = params[:inv_page].to_i
   @max_inv_pages = @db.count_inv_pages(params[:inv_name], session[:username])
-  @lines = @db.retrieve_lines(params[:inv_name], session[:username], @inv_page)
-  # @colors = @db.retrieve_colors(params[:inv_name], session[:username])
+  @line_name = @db.retrieve_line_name(params[:inv_name], session[:username], @inv_page)
   
   validate_color_inputs
   @db.add_color(params[:line], params[:depth], params[:tone], params[:count], params[:inv_name], session[:username])
-  @colors = @db.retrieve_colors(params[:inv_name], session[:username])
-  sort_inventory(@colors)
+
+  params[:line_page] ||= 1
+  @line_page = params[:line_page].to_i
+  @max_line_pages = @db.count_line_pages(params[:inv_name], session[:username], @line_name[0])
+  @colors = @db.retrieve_colors(params[:inv_name], session[:username], @line_name[0], @line_page, session[:sort])
 
   session[:msg] = "Color product added."
   erb :add_item

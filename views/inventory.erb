@@ -34,10 +34,10 @@
   <% end %>
 </div>
 
-<% if @lines.empty? %>
+<% if @line_name.empty? %>
   <p>You don't have any color lines yet. To create a new line, select "Add a new color line" in the tool bar.</p>
 <% else %>
-  <% @lines.each do |line| %>
+  <% @line_name.each do |line| %>
     <div class="inv-table">
       <h2 class="inv-table"><%= line %></h2>
       <% if @colors.empty? %> <%# @colors.none? { |color| color.line == line } %>
@@ -53,7 +53,7 @@
             </tr>
             <tr class="sort-indicator">
               <td></td>
-              <td><%== @indicator %></td>
+              <td><%== sort_indicator %></td>
               <td></td>
               <td></td>
             </tr>
@@ -77,6 +77,18 @@
           </tbody>
         </table>
       <% end %>
+
+      <div class="line-page-nav">
+        <% if @line_page > 1 %>
+          <a href="/inventories/<%= @inv_name %>?inv_page=<%= @inv_page %>&line_page=<%= @line_page - 1 %>" 
+          class="page-button"><<< Prev Page</a>
+        <% end %>
+
+        <% if more_pages?(@line_page, @max_line_pages) %>
+          <a href="/inventories/<%= @inv_name %>?inv_page=<%= @inv_page %>&line_page=<%= @line_page + 1 %>" 
+          class="page-button">Next Page >>></a>
+        <% end %>
+      </div>
     </div>
   <% end %>
 <% end %>

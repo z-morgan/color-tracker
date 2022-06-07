@@ -255,7 +255,7 @@ class PostgresDB
   end
 
   # Returns an array of strings which are line names in the inv
-  def retrieve_lines(inv_name, username, page_num)
+  def retrieve_line_name(inv_name, username, page_num)
     offset = (page_num - 1)
 
     sql = <<~SQL
@@ -270,17 +270,28 @@ class PostgresDB
     @connection.exec_params(sql, [username, inv_name, offset]).column_values(0)
   end
 
-  # Returns an array of Color objects
-  def retrieve_colors(inv_name, username)
+  # Returns the number of pages for a given line in a given inventory.
+  def count_line_pages(inv_name, username, line_name)
     sql = <<~SQL
-      SELECT l.name, c.depth, c.tone, c.count FROM colors AS c
+      SELECT c.id FROM colors AS c
       INNER JOIN inventories AS i ON i.id = c.inventory_id
       INNER JOIN users AS u ON u.id = i.user_id
       INNER JOIN lines AS l ON l.id = c.line_id
-      WHERE u.username = $1 AND i.name = $2;
+      WHERE u.username = $1 AND i.name = $2 AND l.name = $3;
     SQL
 
-    result = @connection.exec_params(sql, [username, inv_name])
+    rows = @connection.exec_params(sql, [username, inv_name, line_name]).ntuples
+    count_pages(rows)
+  end
+
+  # Returns an array of Color objects
+  def retrieve_colors(inv_name, username, line_name, line_page, sort_params)
+    offset = (line_page - 1) * 15
+    sql = sql_by_sort_strategy(sort_params)
+    sql_params = [username, inv_name, line_name, offset]
+    
+    result = @connection.exec_params(sql, sql_params)
+  
     result.each_row.with_object([]) do |row, colors_arr|
       colors_arr << Color.new(*row)
     end
@@ -308,6 +319,57 @@ class PostgresDB
   def line_exists?(line_name)
     sql = "SELECT 1 FROM lines WHERE name = $1"
     !(@connection.exec_params(sql, [line_name]).values.empty?)
+  end
+
+  def count_pages(rows)
+    full_pages, remaining_rows = rows.divmod(15)
+    full_pages += 1 unless remaining_rows.zero?
+    full_pages
+  end
+
+  def sql_by_sort_strategy(sort_params)
+    case sort_params
+    when ["depth", "ascending"]
+      <<~SQL
+        SELECT l.name, c.depth, c.tone, c.count FROM colors AS c
+        INNER JOIN inventories AS i ON i.id = c.inventory_id
+        INNER JOIN users AS u ON u.id = i.user_id
+        INNER JOIN lines AS l ON l.id = c.line_id
+        WHERE u.username = $1 AND i.name = $2 AND l.name = $3
+        ORDER BY c.depth::int ASC
+        LIMIT 15 OFFSET $4;
+      SQL
+    when ["depth", "descending"]
+      <<~SQL
+        SELECT l.name, c.depth, c.tone, c.count FROM colors AS c
+        INNER JOIN inventories AS i ON i.id = c.inventory_id
+        INNER JOIN users AS u ON u.id = i.user_id
+        INNER JOIN lines AS l ON l.id = c.line_id
+        WHERE u.username = $1 AND i.name = $2 AND l.name = $3
+        ORDER BY c.depth::int DESC
+        LIMIT 15 OFFSET $4;
+      SQL
+    when ["tone", "ascending"]
+      <<~SQL
+        SELECT l.name, c.depth, c.tone, c.count FROM colors AS c
+        INNER JOIN inventories AS i ON i.id = c.inventory_id
+        INNER JOIN users AS u ON u.id = i.user_id
+        INNER JOIN lines AS l ON l.id = c.line_id
+        WHERE u.username = $1 AND i.name = $2 AND l.name = $3
+        ORDER BY c.tone ASC
+        LIMIT 15 OFFSET $4;
+      SQL
+    when ["tone", "descending"]
+      <<~SQL
+        SELECT l.name, c.depth, c.tone, c.count FROM colors AS c
+        INNER JOIN inventories AS i ON i.id = c.inventory_id
+        INNER JOIN users AS u ON u.id = i.user_id
+        INNER JOIN lines AS l ON l.id = c.line_id
+        WHERE u.username = $1 AND i.name = $2 AND l.name = $3
+        ORDER BY c.tone DESC
+        LIMIT 15 OFFSET $4;
+      SQL
+    end 
   end
 
   def color_in_stock?(line_name, depth, tone, inv_name, username)
