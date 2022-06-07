@@ -120,8 +120,9 @@ post '/signin' do
       session[:username] = username
       session[:msg] = "Hello #{@db.user_first_name(username)}!"
       redirect '/inventories'
+    else
+      session[:msg] = "Wrong username or password"
     end
-    session[:msg] = "Wrong username or password"
 
   else
     session[:msg] = "That username does not exist"
@@ -143,15 +144,22 @@ get '/register' do
 end
 
 post '/register' do
-  if valid_password?
-    @db.create_user(params[:username], params[:password], params[:name])
-    session[:msg] = "Account created! You may now sign in."
-    redirect '/signin'
+  if !@db.user_exists?(params[:username])
+
+    if valid_password?
+      @db.create_user(params[:username], params[:password], params[:name])
+      session[:msg] = "Account created! You may now sign in."
+      redirect '/signin'
+    else
+      session[:msg] = "It looks like your passwords don't match."
+    end
+
   else
-    session[:msg] = "It looks like your passwords don't match."
-    status 422
-    erb :register
-  end
+    session[:msg] = "That username is already taken."
+  end 
+
+  status 422
+  erb :register
 end
 
 get '/inventories' do

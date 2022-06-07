@@ -6,30 +6,26 @@
   </head>
   <body>
     <header>
-        <%# <div class="window-padding"> %>
-        <h1>Salon Inventory Tracker</h1>
-        <div class="menu">
-          <nav>
-            <ul>
-              <li><a href="/inventories">My Inventories</a></li>
-              <li>
-                <% if session[:username] %>
-                  <form action="/signout" method="post">
-                    <label>Signed in as <%= session[:name] %></label>
-                    <input type="submit" value="Sign out" id="signout">
-                  </form>
-                <% else %>
-                  <p>Sign in below</p>
-                <% end %>
-              </li>
-            </ul>
-          </nav>
-        </div>
-      <%# </div> %>
+      <h1>Salon Inventory Tracker</h1>
+      <div class="menu">
+        <nav>
+          <ul>
+            <li><a href="/inventories">My Inventories</a></li>
+            <li>
+              <% if session[:username] %>
+                <form action="/signout" method="post">
+                  <label>Signed in as <%= session[:username] %></label>
+                  <input type="submit" value="Sign out" id="signout">
+                </form>
+              <% else %>
+                <p>Sign in below</p>
+              <% end %>
+            </li>
+          </ul>
+        </nav>
+      </div>
     </header>
     <main>
-      <%# <div class="window-padding"> %>
-      <%# <div class="inventory-body"> %>
       <div class="inventory-backing">
         <div>
         <% if session[:msg] %>
@@ -39,7 +35,6 @@
 
         <%== yield %>
       </div>
-      <%# </div> %>
     </main>
   </body>
 </html>

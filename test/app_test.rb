@@ -58,6 +58,13 @@ class AppTest < Minitest::Test
     assert_equal "Hello Mrs. Admin!", session[:msg]
   end
 
+  def test_register_duplicate_username
+    post '/register', { username: "admin", password: "secret2", password2: "secret3", name: "Mrs. Admin" }
+    assert_equal 422, last_response.status
+    assert_equal "text/html;charset=utf-8", last_response["Content-Type"]
+    assert_includes last_response.body, "That username is already taken."
+  end
+
   def test_register_mismatched_passwords
     post '/register', { username: "admin2", password: "secret2", password2: "secret3", name: "Mrs. Admin" }
     assert_equal 422, last_response.status

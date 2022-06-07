@@ -2,12 +2,12 @@
 <form action="/register" method="post" class="register">
   <div>
     <label for="name">What is your first name?</label>
-    <input type="text" name="name" id="name" required>
+    <input type="text" name="name" id="name" value="<%= params[:name] %>" required>
   </div>
 
   <div>
     <label for="username">Username:</label>
-    <input type="text" name="username" id="username" required>
+    <input type="text" name="username" id="username" value="<%= params[:username] %>" required>
   </div>
 
   <div>
