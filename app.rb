@@ -19,8 +19,7 @@ end
 
 configure :development do
   also_reload 'lib/postgresdb.rb'
-  # also_reload 'public/stylesheets/app.css'
-  # also_reload 'views/*'
+  also_reload 'public/stylesheets/app.css'
 end
 
 helpers do
@@ -36,17 +35,14 @@ helpers do
     when ["tone", "descending"]  then %q(<div class="tone">↑</div>)
     end
   end
+
+  # returns an array with the names of each line in the given inventory
+  def all_lines
+    @db.retrieve_all_lines(@inv_name, session[:username])
+  end
 end
 
 ####### Application helper methods #######
-
-def data_path
-  if ENV["RACK_ENV"] == "test"
-    File.expand_path("../test/data", __FILE__)
-  else
-    File.expand_path("../data", __FILE__)
-  end
-end
 
 def verify_signed_in
   unless session[:username]
@@ -67,6 +63,8 @@ def valid_password?
   params[:password] && (params[:password] == params[:password2])
 end
 
+# makes the sort parameters from the current request available to routes 
+# and view templates
 def persist_sort_strategy
   if params[:attribute]
     session[:sort] = [params[:attribute], params[:order]]
@@ -77,17 +75,7 @@ def persist_sort_strategy
   @attribute, @order = session[:sort]
 end
 
-def sort_by_depth!(colors_arr)
-  colors_arr.sort_by! { |color| color.depth.to_i }
-end
-
-def validate_color_inputs
-  if params[:line] == "" || params[:depth] == "" || params[:tone] == "" || params[:count] == ""
-    session[:invalid_color] = "At least one field was blank. Color product not added."
-    redirect "/inventories/#{params[:inv_name].gsub(' ', '%20')}/add"
-  end
-end
-
+# Establishes allowed characters for naming certain things
 def invalid_object_name?(obj)
   obj == '' || obj =~ /[^a-z0-9' \-\.]/i
 end
@@ -95,12 +83,12 @@ end
 ####### Routes and Filters #######
 
 before do
-  @db = init_db # this method is provided by whatever data storage library is required. 
+  @db = init_db
   verify_signed_in unless request.path_info =~ /(signin|register)/
 end
 
 after do
-  @db.disconnect  # this method doesn't work with yamldb
+  @db.disconnect
   headers["Content-Type"] = "text/html;charset=utf-8"
 end
 
@@ -160,7 +148,7 @@ post '/register' do
     session[:msg] = "Account created! You may now sign in."
     redirect '/signin'
   else
-    session[:msg] = "It looks like your passwords don't match. *cry*"
+    session[:msg] = "It looks like your passwords don't match."
     status 422
     erb :register
   end
@@ -191,17 +179,18 @@ end
 
 get '/inventories/:inv_name' do
   @inv_name = params[:inv_name]
+  username = session[:username]
   persist_sort_strategy
 
   params[:inv_page] ||= 1
   @inv_page = params[:inv_page].to_i
-  @max_inv_pages = @db.count_inv_pages(params[:inv_name], session[:username])
-  @line_name = @db.retrieve_line_name(params[:inv_name], session[:username], @inv_page)
+  @max_inv_pages = @db.count_inv_pages(@inv_name, username)
+  @line_name = @db.retrieve_line_name(@inv_name, username, @inv_page)
   
   params[:line_page] ||= 1
   @line_page = params[:line_page].to_i
-  @max_line_pages = @db.count_line_pages(params[:inv_name], session[:username], @line_name[0])
-  @colors = @db.retrieve_colors(params[:inv_name], session[:username], @line_name[0], @line_page, session[:sort])
+  @max_line_pages = @db.count_line_pages(@inv_name, username, @line_name)
+  @colors = @db.retrieve_colors(@inv_name, username, @line_name, @line_page, session[:sort])
 
   erb :inventory
 end
@@ -230,41 +219,42 @@ end
 
 get '/inventories/:inv_name/add' do
   @inv_name = params[:inv_name]
+  username = session[:username]
   persist_sort_strategy
 
   params[:inv_page] ||= 1
   @inv_page = params[:inv_page].to_i
-  @max_inv_pages = @db.count_inv_pages(params[:inv_name], session[:username])
-  @line_name = @db.retrieve_line_name(params[:inv_name], session[:username], @inv_page)
+  @max_inv_pages = @db.count_inv_pages(@inv_name, username)
+  @line_name = @db.retrieve_line_name(@inv_name, username, @inv_page)
 
-  if @db.no_lines?(params[:inv_name], session[:username])
+  if @db.no_lines?(@inv_name, username)
     session[:msg] = "You need to add a color line first."
-    redirect "/inventories/#{params[:inv_name].gsub(' ', '%20')}"
+    redirect "/inventories/#{@inv_name.gsub(' ', '%20')}"
   else
     params[:line_page] ||= 1
     @line_page = params[:line_page].to_i
-    @max_line_pages = @db.count_line_pages(params[:inv_name], session[:username], @line_name[0])
-    @colors = @db.retrieve_colors(params[:inv_name], session[:username], @line_name[0], @line_page, session[:sort])
+    @max_line_pages = @db.count_line_pages(@inv_name, username, @line_name)
+    @colors = @db.retrieve_colors(@inv_name, username, @line_name, @line_page, session[:sort])
     erb :add_item
   end
 end
 
 post '/inventories/:inv_name/add' do
   @inv_name = params[:inv_name]
+  username = session[:username]
   persist_sort_strategy
 
   params[:inv_page] ||= 1
   @inv_page = params[:inv_page].to_i
-  @max_inv_pages = @db.count_inv_pages(params[:inv_name], session[:username])
-  @line_name = @db.retrieve_line_name(params[:inv_name], session[:username], @inv_page)
-  
-  validate_color_inputs
-  @db.add_color(params[:line], params[:depth], params[:tone], params[:count], params[:inv_name], session[:username])
+  @max_inv_pages = @db.count_inv_pages(@inv_name, username)
+  @line_name = @db.retrieve_line_name(@inv_name, username, @inv_page)
+
+  @db.add_color(params[:line], params[:depth], params[:tone], params[:count], @inv_name, username)
 
   params[:line_page] ||= 1
   @line_page = params[:line_page].to_i
-  @max_line_pages = @db.count_line_pages(params[:inv_name], session[:username], @line_name[0])
-  @colors = @db.retrieve_colors(params[:inv_name], session[:username], @line_name[0], @line_page, session[:sort])
+  @max_line_pages = @db.count_line_pages(@inv_name, username, @line_name[0])
+  @colors = @db.retrieve_colors(@inv_name, username, @line_name, @line_page, session[:sort])
 
   session[:msg] = "Color product added."
   erb :add_item

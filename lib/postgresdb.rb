@@ -267,7 +267,20 @@ class PostgresDB
       LIMIT 1 OFFSET $3;
     SQL
 
-    @connection.exec_params(sql, [username, inv_name, offset]).column_values(0)
+    @connection.exec_params(sql, [username, inv_name, offset]).column_values(0).first
+  end
+
+  # Returns an array with the names of the lines in the inventory
+  def retrieve_all_lines(inv_name, username)
+    sql = <<~SQL
+      SELECT l.name FROM lines AS l
+      INNER JOIN inventories_lines AS il ON l.id = il.line_id
+      INNER JOIN inventories AS i ON i.id = il.inventory_id
+      INNER JOIN users AS u ON u.id = i.user_id
+      WHERE u.username = $1 AND i.name = $2
+    SQL
+
+    @connection.exec_params(sql, [username, inv_name]).column_values(0)
   end
 
   # Returns the number of pages for a given line in a given inventory.
@@ -289,7 +302,7 @@ class PostgresDB
     offset = (line_page - 1) * 15
     sql = sql_by_sort_strategy(sort_params)
     sql_params = [username, inv_name, line_name, offset]
-    
+
     result = @connection.exec_params(sql, sql_params)
   
     result.each_row.with_object([]) do |row, colors_arr|
@@ -301,7 +314,7 @@ class PostgresDB
     unless ENV["RACK_ENV"] == "test"
       password = BCrypt::Password.create(password)
     end
-
+    
     sql = <<~SQL
       INSERT INTO users (username, password, first_name)
       VALUES ($1, $2, $3);

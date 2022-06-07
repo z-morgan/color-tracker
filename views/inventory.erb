@@ -34,62 +34,58 @@
   <% end %>
 </div>
 
-<% if @line_name.empty? %>
+<% if @line_name.nil? %>
   <p>You don't have any color lines yet. To create a new line, select "Add a new color line" in the tool bar.</p>
 <% else %>
-  <% @line_name.each do |line| %>
-    <div class="inv-table">
-      <h2 class="inv-table"><%= line %></h2>
-      <% if @colors.empty? %> <%# @colors.none? { |color| color.line == line } %>
-        <p>You don't have any colors in this inventory yet. To import new product, select "Add items here!" in the tool bar.</p>
-      <% else %>
-        <table>
-          <thead>
+  <div class="inv-table">
+    <h2 class="inv-table"><%= @line_name %></h2>
+    <% if @colors.empty? %>
+      <p>You don't have any colors in this inventory yet. To import new product, select "Add items here!" in the tool bar.</p>
+    <% else %>
+      <table>
+        <thead>
+          <tr>
+            <th></th>
+            <th>Depth/Tone</th>
+            <th>Line</th>
+            <th>Count</th>
+          </tr>
+          <tr class="sort-indicator">
+            <td></td>
+            <td><%== sort_indicator %></td>
+            <td></td>
+            <td></td>
+          </tr>
+        </thead>
+        
+        <tbody>
+          <% @colors.each do |color| %>
             <tr>
-              <th></th>
-              <th>Depth/Tone</th>
-              <th>Line</th>
-              <th>Count</th>
+              <td>
+                <form action="/inventories/<%= @inv_name %>/use" method="post">
+                  <button type="submit" name="color" value="<%= color.to_s %>">Use One</button>
+                </form>
+              </td>
+              <td><%= "#{color.depth}/#{color.tone}" %></td>
+              <td><%= color.line %></td>
+              <td><%= color.count %></td>
             </tr>
-            <tr class="sort-indicator">
-              <td></td>
-              <td><%== sort_indicator %></td>
-              <td></td>
-              <td></td>
-            </tr>
-          </thead>
-          
-          <tbody>
-            <% @colors.each do |color| %>
-              <% if color.line == line %>
-                <tr>
-                  <td>
-                    <form action="/inventories/<%= @inv_name %>/use" method="post">
-                      <button type="submit" name="color" value="<%= color.to_s %>">Use One</button>
-                    </form>
-                  </td>
-                  <td><%= "#{color.depth}/#{color.tone}" %></td>
-                  <td><%= color.line %></td>
-                  <td><%= color.count %></td>
-                </tr>
-              <% end %>
-            <% end %>
-          </tbody>
-        </table>
+          <% end %>
+        </tbody>
+      </table>
+    <% end %>
+
+    <div class="line-page-nav">
+      <% if @line_page > 1 %>
+        <a href="/inventories/<%= @inv_name %>?inv_page=<%= @inv_page %>&line_page=<%= @line_page - 1 %>" 
+        class="page-button"><<< Prev Page</a>
       <% end %>
 
-      <div class="line-page-nav">
-        <% if @line_page > 1 %>
-          <a href="/inventories/<%= @inv_name %>?inv_page=<%= @inv_page %>&line_page=<%= @line_page - 1 %>" 
-          class="page-button"><<< Prev Page</a>
-        <% end %>
-
-        <% if more_pages?(@line_page, @max_line_pages) %>
-          <a href="/inventories/<%= @inv_name %>?inv_page=<%= @inv_page %>&line_page=<%= @line_page + 1 %>" 
-          class="page-button">Next Page >>></a>
-        <% end %>
-      </div>
+      <% if more_pages?(@line_page, @max_line_pages) %>
+        <a href="/inventories/<%= @inv_name %>?inv_page=<%= @inv_page %>&line_page=<%= @line_page + 1 %>" 
+        class="page-button">Next Page >>></a>
+      <% end %>
     </div>
-  <% end %>
+  </div>
 <% end %>
 

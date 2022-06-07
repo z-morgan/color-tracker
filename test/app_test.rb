@@ -62,7 +62,7 @@ class AppTest < Minitest::Test
     post '/register', { username: "admin2", password: "secret2", password2: "secret3", name: "Mrs. Admin" }
     assert_equal 422, last_response.status
     assert_equal "text/html;charset=utf-8", last_response["Content-Type"]
-    assert_includes last_response.body, "It looks like your passwords don't match. *cry*"
+    assert_includes last_response.body, "It looks like your passwords don't match."
   end
 
   def test_signin_page
@@ -181,12 +181,6 @@ class AppTest < Minitest::Test
     assert_equal "text/html;charset=utf-8", last_response["Content-Type"]
     assert_includes last_response.body, %q(<td>10/2</td>)
     assert_includes last_response.body, %q(<td>4</td>)
-  end
-
-  def test_add_empty_attribute
-    post "/inventories/Mr.%20Admin's%201st%20Inventory/add", \
-      { line: "Wella", depth: "1", tone: "2", count: "" }, signed_in
-
   end
 
   def test_new_line_page
