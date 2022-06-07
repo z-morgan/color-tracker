@@ -17,7 +17,19 @@ configure do
   set :erb, :escape_html => true
 end
 
-####### Application and Route helper methods #######
+# configure :development do
+#   also_reload 'lib/postgresdb.rb'
+#   also_reload 'public/stylesheets/app.css'
+#   also_reload 'views/*'
+# end
+
+helpers do
+  def more_pages?(page, max_pages)
+    max_pages > page
+  end
+end
+
+####### Application helper methods #######
 
 def data_path
   if ENV["RACK_ENV"] == "test"
@@ -188,7 +200,12 @@ end
 
 get '/inventories/:inv_name' do
   @inv_name = params[:inv_name]
-  @lines = @db.retrieve_lines(params[:inv_name], session[:username])
+
+  params[:inv_page] ||= 1
+  @inv_page = params[:inv_page].to_i
+  @max_inv_pages = @db.count_inv_pages(params[:inv_name], session[:username])
+  @lines = @db.retrieve_lines(params[:inv_name], session[:username], @inv_page)
+
   @colors = @db.retrieve_colors(params[:inv_name], session[:username])
 
   sort_inventory(@colors)
@@ -219,7 +236,12 @@ end
 
 get '/inventories/:inv_name/add' do
   @inv_name = params[:inv_name]
-  @lines = @db.retrieve_lines(params[:inv_name], session[:username])
+
+  params[:inv_page] ||= 1
+  @inv_page = params[:inv_page].to_i
+  @max_inv_pages = @db.count_inv_pages(params[:inv_name], session[:username])
+  @lines = @db.retrieve_lines(params[:inv_name], session[:username], @inv_page)
+
   @colors = @db.retrieve_colors(params[:inv_name], session[:username])
 
   if @db.no_lines?(params[:inv_name], session[:username])
@@ -233,7 +255,11 @@ end
 
 post '/inventories/:inv_name/add' do
   @inv_name = params[:inv_name]
-  @lines = @db.retrieve_lines(params[:inv_name], session[:username])
+  
+  params[:inv_page] ||= 1
+  @inv_page = params[:inv_page].to_i
+  @max_inv_pages = @db.count_inv_pages(params[:inv_name], session[:username])
+  @lines = @db.retrieve_lines(params[:inv_name], session[:username], @inv_page)
   # @colors = @db.retrieve_colors(params[:inv_name], session[:username])
   
   validate_color_inputs

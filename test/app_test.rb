@@ -203,7 +203,7 @@ class AppTest < Minitest::Test
     assert_equal "text/html;charset=utf-8", last_response["Content-Type"]
     assert_equal "Color line added.", session[:msg]
 
-    get last_response["Location"]
+    get (last_response["Location"] + "?inv_page=2")
     assert_equal 200, last_response.status
     assert_equal "text/html;charset=utf-8", last_response["Content-Type"]
     assert_includes last_response.body, "Cosmoprof"

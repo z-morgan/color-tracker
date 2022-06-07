@@ -105,5 +105,14 @@
   <% end %>
 <% end %>
 
-<br>
-<br>
+<div class="inv-page-nav">
+  <% if @inv_page > 1 %>
+    <a href="/inventories/<%= @inv_name %>?inv_page=<%= @inv_page - 1 %>" class="page-button">
+      <<< Prev Page</a>
+  <% end %>
+
+  <% if more_pages?(@inv_page, @max_inv_pages) %>
+    <a href="/inventories/<%= @inv_name %>?inv_page=<%= @inv_page + 1 %>" class="page-button">
+    Next Page >>></a>
+  <% end %>
+</div>

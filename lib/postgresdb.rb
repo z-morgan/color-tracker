@@ -241,17 +241,35 @@ class PostgresDB
     @connection.exec_params(sql, [username, inv_name]).values.empty?
   end
 
-  # Returns an array of strings which are line names in the inv
-  def retrieve_lines(inv_name, username)
+  # Returns the number of pages in an inventory
+  def count_inv_pages(inv_name, username)
     sql = <<~SQL
-      SELECT l.name FROM lines AS l
+      SELECT l.id FROM lines AS l
       INNER JOIN inventories_lines AS il ON l.id = il.line_id
       INNER JOIN inventories AS i ON i.id = il.inventory_id
       INNER JOIN users AS u ON u.id = i.user_id
       WHERE u.username = $1 AND i.name = $2;
     SQL
 
-    @connection.exec_params(sql, [username, inv_name]).column_values(0)
+    num = @connection.exec_params(sql, [username, inv_name]).ntuples
+    num += 1 if num.odd?
+    num / 2
+  end
+
+  # Returns an array of strings which are line names in the inv
+  def retrieve_lines(inv_name, username, page_num)
+    offset = (page_num - 1) * 2
+
+    sql = <<~SQL
+      SELECT l.name FROM lines AS l
+      INNER JOIN inventories_lines AS il ON l.id = il.line_id
+      INNER JOIN inventories AS i ON i.id = il.inventory_id
+      INNER JOIN users AS u ON u.id = i.user_id
+      WHERE u.username = $1 AND i.name = $2
+      LIMIT 2 OFFSET $3;
+    SQL
+
+    @connection.exec_params(sql, [username, inv_name, offset]).column_values(0)
   end
 
   # Returns an array of Color objects
