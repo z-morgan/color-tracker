@@ -19,7 +19,6 @@ end
 
 configure :development do
   also_reload 'lib/postgresdb.rb'
-  also_reload 'public/stylesheets/app.css'
 end
 
 helpers do

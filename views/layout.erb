@@ -11,7 +11,7 @@
         <nav>
           <ul>
             <li><a href="/inventories">My Inventories</a></li>
-            <li>
+            <li id="signin-status">
               <% if session[:username] %>
                 <form action="/signout" method="post">
                   <label>Signed in as <%= session[:username] %></label>
