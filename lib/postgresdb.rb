@@ -76,6 +76,36 @@ end
 
 ####### Application Class Definitions #######
 
+class Inventory
+  attr_accessor :lines
+
+  def initialize(lines)
+    @lines = lines
+  end
+
+  # sorts the color objects in each line
+  def sort_colors!(sort_params)
+    sort_algo = case sort_params
+                when ["depth", "ascending"]
+                  Proc.new { |arr| sort_by_depth!(arr) }
+                when ["depth", "descending"]
+                  Proc.new { |arr| sort_by_depth!(arr).reverse! }
+                when ["tone", "ascending"]
+                  Proc.new { |arr| arr.sort_by!(&:tone) }
+                when ["tone", "descending"]
+                  Proc.new { |arr| arr.sort_by!(&:tone).reverse! }
+                end
+
+    lines.each_value(&sort_algo)
+  end
+
+  private
+
+  def sort_by_depth!(arr)
+    arr.sort_by! { |color| color.depth.to_i }
+  end
+end
+
 class Color
   attr_accessor :line, :depth, :tone, :count
 
@@ -94,6 +124,33 @@ end
 class PostgresDB
   def initialize(connection)
     @connection = connection
+  end
+
+  def create_user(username, password, name)
+    unless ENV["RACK_ENV"] == "test"
+      password = BCrypt::Password.create(password)
+    end
+    
+    sql = <<~SQL
+      INSERT INTO users (username, password, first_name)
+      VALUES ($1, $2, $3);
+    SQL
+
+    @connection.exec_params(sql, [username, password, name])
+  end
+
+  def retrieve_inventory(username, inv_name)
+    lines = {}
+
+    line_names(inv_name, username).each do |line_name|
+      lines[line_name] = []
+    end
+
+    colors_in_inventory(username, inv_name).each do |color|
+      lines[color.line] << color
+    end
+
+    Inventory.new(lines)
   end
 
   def reset_demo_account
@@ -136,18 +193,6 @@ class PostgresDB
     SQL
 
     @connection.exec_params(sql, [username, inv_name])
-  end
-
-  def line_exists_in_inventory?(line_name, inv_name, username)
-    sql = <<~SQL
-      SELECT 1 FROM lines AS l
-      INNER JOIN inventories_lines AS il ON l.id = il.line_id
-      INNER JOIN inventories AS i ON i.id = il.inventory_id
-      INNER JOIN users AS u ON u.id = i.user_id
-      WHERE u.username = $1 AND i.name = $2 AND l.name = $3;
-    SQL
-
-    !(@connection.exec_params(sql, [username, inv_name, line_name]).values.empty?)
   end
 
   # Before establishing the relationship between the line and inventory, checks
@@ -228,50 +273,14 @@ class PostgresDB
     @connection.exec_params(sql, [username, inv_name, line, depth, tone])
   end
 
-  # Determines if there are any lines associated with the inventory yet.
-  def no_lines?(inv_name, username)
-    sql = <<~SQL
-      SELECT 1 FROM inventories_lines WHERE inventory_id = (
-        SELECT id FROM inventories WHERE name = $2 AND user_id = (
-          SELECT id FROM users WHERE username = $1
-        )
-      );
-    SQL
-
-    @connection.exec_params(sql, [username, inv_name]).values.empty?
+  def disconnect
+    @connection.close
   end
 
-  # Returns the number of pages in an inventory
-  def count_inv_pages(inv_name, username)
-    sql = <<~SQL
-      SELECT l.id FROM lines AS l
-      INNER JOIN inventories_lines AS il ON l.id = il.line_id
-      INNER JOIN inventories AS i ON i.id = il.inventory_id
-      INNER JOIN users AS u ON u.id = i.user_id
-      WHERE u.username = $1 AND i.name = $2;
-    SQL
-
-    @connection.exec_params(sql, [username, inv_name]).ntuples
-  end
-
-  # Returns an array of strings which are line names in the inv
-  def retrieve_line_name(inv_name, username, page_num)
-    offset = (page_num - 1)
-
-    sql = <<~SQL
-      SELECT l.name FROM lines AS l
-      INNER JOIN inventories_lines AS il ON l.id = il.line_id
-      INNER JOIN inventories AS i ON i.id = il.inventory_id
-      INNER JOIN users AS u ON u.id = i.user_id
-      WHERE u.username = $1 AND i.name = $2
-      LIMIT 1 OFFSET $3;
-    SQL
-
-    @connection.exec_params(sql, [username, inv_name, offset]).column_values(0).first
-  end
+  private
 
   # Returns an array with the names of the lines in the inventory
-  def retrieve_all_lines(inv_name, username)
+  def line_names(inv_name, username)
     sql = <<~SQL
       SELECT l.name FROM lines AS l
       INNER JOIN inventories_lines AS il ON l.id = il.line_id
@@ -283,51 +292,21 @@ class PostgresDB
     @connection.exec_params(sql, [username, inv_name]).column_values(0)
   end
 
-  # Returns the number of pages for a given line in a given inventory.
-  def count_line_pages(inv_name, username, line_name)
+  def colors_in_inventory(username, inv_name)
     sql = <<~SQL
-      SELECT c.id FROM colors AS c
-      INNER JOIN inventories AS i ON i.id = c.inventory_id
-      INNER JOIN users AS u ON u.id = i.user_id
-      INNER JOIN lines AS l ON l.id = c.line_id
-      WHERE u.username = $1 AND i.name = $2 AND l.name = $3;
+        SELECT l.name, c.depth, c.tone, c.count FROM colors AS c
+        INNER JOIN inventories AS i ON i.id = c.inventory_id
+        INNER JOIN users AS u ON u.id = i.user_id
+        INNER JOIN lines AS l ON l.id = c.line_id
+        WHERE u.username = $1 AND i.name = $2;
     SQL
 
-    rows = @connection.exec_params(sql, [username, inv_name, line_name]).ntuples
-    count_pages(rows)
-  end
-
-  # Returns an array of Color objects
-  def retrieve_colors(inv_name, username, line_name, line_page, sort_params)
-    offset = (line_page - 1) * 15
-    sql = sql_by_sort_strategy(sort_params)
-    sql_params = [username, inv_name, line_name, offset]
-
-    result = @connection.exec_params(sql, sql_params)
+    result = @connection.exec_params(sql, [username, inv_name])
   
     result.each_row.with_object([]) do |row, colors_arr|
       colors_arr << Color.new(*row)
     end
   end
-
-  def create_user(username, password, name)
-    unless ENV["RACK_ENV"] == "test"
-      password = BCrypt::Password.create(password)
-    end
-    
-    sql = <<~SQL
-      INSERT INTO users (username, password, first_name)
-      VALUES ($1, $2, $3);
-    SQL
-
-    @connection.exec_params(sql, [username, password, name])
-  end
-
-  def disconnect
-    @connection.close
-  end
-
-  private
 
   def line_exists?(line_name)
     sql = "SELECT 1 FROM lines WHERE name = $1"

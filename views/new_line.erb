@@ -1,7 +1,7 @@
-<form action="/inventories/<%= @inv_name %>/new-line" method="post" class="new-line">
+<form action="/inventories/<%= params[:inv_name] %>/new-line" method="post" class="new-line">
   <label>
     What is the name of the new line?
-    <input type="text" name="line" value="<%= params[:line] %>">
+    <input type="text" name="new_line" value="<%= params[:line] %>">
   </label>
   <input type="submit" value="Add line">
 </form>

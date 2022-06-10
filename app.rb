@@ -21,11 +21,9 @@ configure :development do
   also_reload 'lib/postgresdb.rb'
 end
 
-helpers do
-  def more_pages?(page, max_pages)
-    max_pages > page
-  end
+COLORS_PER_PAGE = 15
 
+helpers do
   def sort_indicator
     case session[:sort]
     when ["depth", "ascending"]  then %q(<div class="depth">↓</div>)
@@ -37,7 +35,21 @@ helpers do
 
   # returns an array with the names of each line in the given inventory
   def all_lines
-    @db.retrieve_all_lines(@inv_name, session[:username])
+    @inventory.lines.keys
+  end
+
+  def colors_by_page(colors_arr, page_num)
+    idx1 = COLORS_PER_PAGE * (page_num - 1)
+    idx2 = COLORS_PER_PAGE * page_num
+
+    colors_arr[idx1...idx2]
+  end
+
+  def total_line_pages(colors_arr)
+    num, remaining = colors_arr.size.divmod(COLORS_PER_PAGE)
+
+    num += 1 if remaining > 0
+    num
   end
 end
 
@@ -68,7 +80,7 @@ def persist_sort_strategy
   if params[:attribute]
     session[:sort] = [params[:attribute], params[:order]]
   else
-    session[:sort] = ["depth", "ascending"]
+    session[:sort] ||= ["depth", "ascending"]
   end
 
   @attribute, @order = session[:sort]
@@ -84,6 +96,15 @@ end
 before do
   @db = init_db
   verify_signed_in unless request.path_info =~ /(signin|register)/
+  persist_sort_strategy
+end
+
+before '/inventories/:inv_name*' do
+  params[:inv_page] ? params[:inv_page] = params[:inv_page].to_i : params[:inv_page] = 1
+  params[:line_page] ? params[:line_page] = params[:line_page].to_i : params[:line_page] = 1
+
+  @inventory = @db.retrieve_inventory(session[:username], params[:inv_name])
+  @inventory.sort_colors!(session[:sort])
 end
 
 after do
@@ -185,20 +206,7 @@ post '/inventories/new' do
 end
 
 get '/inventories/:inv_name' do
-  @inv_name = params[:inv_name]
-  username = session[:username]
-  persist_sort_strategy
-
-  params[:inv_page] ||= 1
-  @inv_page = params[:inv_page].to_i
-  @max_inv_pages = @db.count_inv_pages(@inv_name, username)
-  @line_name = @db.retrieve_line_name(@inv_name, username, @inv_page)
-  
-  params[:line_page] ||= 1
-  @line_page = params[:line_page].to_i
-  @max_line_pages = @db.count_line_pages(@inv_name, username, @line_name)
-  @colors = @db.retrieve_colors(@inv_name, username, @line_name, @line_page, session[:sort])
-
+  @line_name = @inventory.lines.keys[params[:inv_page] - 1]
   erb :inventory
 end
 
@@ -208,66 +216,45 @@ get '/inventories/:inv_name/new-line' do
 end
 
 post '/inventories/:inv_name/new-line' do
-  @inv_name = params[:inv_name]
-  new_line = params[:line]
-  if invalid_object_name?(new_line)
+  if invalid_object_name?(params[:new_line])
     session[:msg] = "The name can only have letters, numbers, "\
     "spaces, dashes, periods, and apostrophies."
     halt 422, (erb :new_line)
-  elsif @db.line_exists_in_inventory?(new_line, params[:inv_name], session[:username])
+  elsif @inventory.lines.keys.include?(params[:new_line])
     session[:msg] = "That line already exists!"
     halt 422, (erb :new_line)
   end
 
-  @db.add_new_color_line(new_line, params[:inv_name], session[:username])
+  @db.add_new_color_line(params[:new_line], params[:inv_name], session[:username])
   session[:msg] = "Color line added."
   redirect "/inventories/#{params[:inv_name].gsub(' ', '%20')}"
 end
 
 get '/inventories/:inv_name/add' do
-  @inv_name = params[:inv_name]
-  username = session[:username]
-  persist_sort_strategy
-
-  params[:inv_page] ||= 1
-  @inv_page = params[:inv_page].to_i
-  @max_inv_pages = @db.count_inv_pages(@inv_name, username)
-  @line_name = @db.retrieve_line_name(@inv_name, username, @inv_page)
-
-  if @db.no_lines?(@inv_name, username)
+  if @inventory.lines.empty?
     session[:msg] = "You need to add a color line first."
-    redirect "/inventories/#{@inv_name.gsub(' ', '%20')}"
+    redirect "/inventories/#{params[:inv_name].gsub(' ', '%20')}"
   else
-    params[:line_page] ||= 1
-    @line_page = params[:line_page].to_i
-    @max_line_pages = @db.count_line_pages(@inv_name, username, @line_name)
-    @colors = @db.retrieve_colors(@inv_name, username, @line_name, @line_page, session[:sort])
+    @line_name = @inventory.lines.keys[params[:inv_page] - 1]
     erb :add_item
   end
 end
 
 post '/inventories/:inv_name/add' do
-  @inv_name = params[:inv_name]
-  username = session[:username]
-  persist_sort_strategy
 
-  params[:inv_page] ||= 1
-  @inv_page = params[:inv_page].to_i
-  @max_inv_pages = @db.count_inv_pages(@inv_name, username)
-  @line_name = @db.retrieve_line_name(@inv_name, username, @inv_page)
+  @db.add_color(params[:line], params[:depth], params[:tone], params[:count], params[:inv_name], session[:username])
 
-  @db.add_color(params[:line], params[:depth], params[:tone], params[:count], @inv_name, username)
+  @inventory = @db.retrieve_inventory(session[:username], params[:inv_name])
+  @inventory.sort_colors!(session[:sort])
 
-  params[:line_page] ||= 1
-  @line_page = params[:line_page].to_i
-  @max_line_pages = @db.count_line_pages(@inv_name, username, @line_name[0])
-  @colors = @db.retrieve_colors(@inv_name, username, @line_name, @line_page, session[:sort])
+  @line_name = @inventory.lines.keys[params[:inv_page] - 1]
 
   session[:msg] = "Color product added."
   erb :add_item
 end
 
 post "/inventories/:inv_name/use" do
+  # This line could be simplified if the page used the color's id instead of the string version.
   @db.use_color(session[:username], params[:inv_name], *(params[:color].split("_")))
 
   session[:msg] = "Color product used"

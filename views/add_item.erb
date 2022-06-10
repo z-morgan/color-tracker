@@ -1,5 +1,5 @@
 <div class="tools">
-  <form action="/inventories/<%= @inv_name %>" method="get" class="sort">
+  <form action="/inventories/<%= params[:inv_name] %>" method="get" class="sort">
       <label>Sort inventory: </label>
       <select name="attribute">
         <option value="depth" <%== 'selected' if @attribute == "depth" %>>Depth</option>
@@ -14,16 +14,16 @@
 
   <div class="new-items">
     <label for="add-item">Received new product?</label>
-    <a href="/inventories/<%= @inv_name %>/add" id="add-item">Add items here!</a>
+    <a href="/inventories/<%= params[:inv_name] %>/add" id="add-item">Add items here!</a>
   </div>
 
   <div class="new-line">
-    <a href="/inventories/<%= @inv_name %>/new-line">Add a new color line</a>
+    <a href="/inventories/<%= params[:inv_name] %>/new-line">Add a new color line</a>
   </div>
 </div>
 
 <fieldset class="new-line-form">
-<form action="/inventories/<%= @inv_name %>/add" method="post" class="new-item">
+<form action="/inventories/<%= params[:inv_name] %>/add" method="post" class="new-item">
   <label>
     Depth/Tone:
     <input type="number" name="depth" min="1" max="11" required>
@@ -47,29 +47,29 @@
 
   <input type="submit" value="Add Item">
 </form>
-<form action="/inventories/<%= @inv_name %>" method="get">
+<form action="/inventories/<%= params[:inv_name] %>" method="get">
   <input type="submit" value="Done Adding Items">
 </form>
 </fieldset>
 
 <div class="inv-page-nav">
-  <% if @inv_page > 1 %>
-    <a href="/inventories/<%= @inv_name %>?inv_page=<%= @inv_page - 1 %>" class="page-button">
+  <% if params[:inv_page] > 1 %>
+    <a href="/inventories/<%= params[:inv_name] %>?inv_page=<%= params[:inv_page] - 1 %>" class="page-button">
       <<< Prev Color Line</a>
   <% end %>
 
-  <% if more_pages?(@inv_page, @max_inv_pages) %>
-    <a href="/inventories/<%= @inv_name %>?inv_page=<%= @inv_page + 1 %>" class="page-button">
+  <% if params[:inv_page] < @inventory.lines.size %>
+    <a href="/inventories/<%= params[:inv_name] %>?inv_page=<%= params[:inv_page] + 1 %>" class="page-button">
     Next Color Line >>></a>
   <% end %>
 </div>
 
-<% if @line_name.nil? %>
+<% if @inventory.lines.empty? %>
   <p>You don't have any color lines yet. To create a new line, select "Add a new color line" in the tool bar.</p>
 <% else %>
   <div class="inv-table">
     <h2 class="inv-table"><%= @line_name %></h2>
-    <% if @colors.empty? %>
+    <% if @inventory.lines[@line_name].empty? %>
       <p>You don't have any colors in this inventory yet. To import new product, select "Add items here!" in the tool bar.</p>
     <% else %>
       <table>
@@ -89,10 +89,10 @@
         </thead>
         
         <tbody>
-          <% @colors.each do |color| %>
+          <% colors_by_page(@inventory.lines[@line_name], params[:line_page]).each do |color| %>
             <tr>
               <td>
-                <form action="/inventories/<%= @inv_name %>/use" method="post">
+                <form action="/inventories/<%= params[:inv_name] %>/use" method="post">
                   <button type="submit" name="color" value="<%= color.to_s %>">Use One</button>
                 </form>
               </td>
@@ -106,13 +106,13 @@
     <% end %>
 
     <div class="line-page-nav">
-      <% if @line_page > 1 %>
-        <a href="/inventories/<%= @inv_name %>?inv_page=<%= @inv_page %>&line_page=<%= @line_page - 1 %>" 
+      <% if params[:line_page] > 1 %>
+        <a href="/inventories/<%= params[:inv_name] %>?inv_page=<%= params[:inv_page] %>&line_page=<%= params[:line_page] - 1 %>" 
         class="page-button"><<< Prev Page</a>
       <% end %>
 
-      <% if more_pages?(@line_page, @max_line_pages) %>
-        <a href="/inventories/<%= @inv_name %>?inv_page=<%= @inv_page %>&line_page=<%= @line_page + 1 %>" 
+      <% if params[:line_page] < total_line_pages(@inventory.lines[@line_name]) %>
+        <a href="/inventories/<%= params[:inv_name] %>?inv_page=<%= params[:inv_page] %>&line_page=<%= params[:line_page] + 1 %>" 
         class="page-button">Next Page >>></a>
       <% end %>
     </div>

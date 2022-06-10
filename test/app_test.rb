@@ -199,7 +199,7 @@ class AppTest < Minitest::Test
 
   def test_add_new_line
     post "/inventories/Mr.%20Admin's%201st%20Inventory/new-line", \
-      { line: "Cosmoprof" }, signed_in
+      { new_line: "Cosmoprof" }, signed_in
     assert_equal 302, last_response.status
     assert_equal "text/html;charset=utf-8", last_response["Content-Type"]
     assert_equal "Color line added.", session[:msg]
@@ -212,7 +212,7 @@ class AppTest < Minitest::Test
 
   def test_add_invalid_line
     post "/inventories/Mr.%20Admin's%201st%20Inventory/new-line", \
-      { line: "Cosmoprof_and_company" }, signed_in
+      { new_line: "Cosmoprof_and_company" }, signed_in
     assert_equal 422, last_response.status
     assert_equal "text/html;charset=utf-8", last_response["Content-Type"]
     assert_includes last_response.body, "The name can only have letters, numbers,"\
@@ -221,7 +221,7 @@ class AppTest < Minitest::Test
 
   def test_add_duplicate_line
     post "/inventories/Mr.%20Admin's%201st%20Inventory/new-line", \
-      { line: "Wella" }, signed_in
+      { new_line: "Wella" }, signed_in
     assert_equal 422, last_response.status
     assert_equal "text/html;charset=utf-8", last_response["Content-Type"]
     assert_includes last_response.body, "That line already exists!"
