@@ -50,14 +50,6 @@ module PostgresDBSetup
     @test_connection.close
   end
 
-  def session
-    last_request.env["rack.session"]
-  end
-
-  def signed_in
-    { "rack.session" => { username: "admin", name: "Mr. Admin" } }
-  end
-
   def setup_for_test_add_item_no_lines
     sql1 = <<~SQL
       INSERT INTO users (id, username, password, first_name)

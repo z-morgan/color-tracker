@@ -13,6 +13,14 @@ class AppTest < Minitest::Test
     Sinatra::Application
   end
 
+  def session
+    last_request.env["rack.session"]
+  end
+
+  def signed_in
+    { "rack.session" => { username: "admin", name: "Mr. Admin" } }
+  end
+
   ########### tests #############
 
   def test_homepage_not_signed_in
@@ -175,6 +183,10 @@ class AppTest < Minitest::Test
   def test_add_new_color
     post "/inventories/Mr.%20Admin's%201st%20Inventory/add", \
       { line: "Wella", depth: '5', tone: '3', count: 2 }, signed_in
+    assert_equal 302, last_response.status
+    assert_equal "Color product added.", session[:msg]
+
+    get last_response["Location"]
     assert_equal 200, last_response.status
     assert_equal "text/html;charset=utf-8", last_response["Content-Type"]
     assert_includes last_response.body, %q(<td>5/3</td>)
@@ -184,6 +196,10 @@ class AppTest < Minitest::Test
   def test_add_stocked_color
     post "/inventories/Mr.%20Admin's%201st%20Inventory/add", \
       { line: "Wella", depth: "10", tone: "2", count: "3" }, signed_in
+    assert_equal 302, last_response.status
+    assert_equal "Color product added.", session[:msg]
+
+    get last_response["Location"]
     assert_equal 200, last_response.status
     assert_equal "text/html;charset=utf-8", last_response["Content-Type"]
     assert_includes last_response.body, %q(<td>10/2</td>)
