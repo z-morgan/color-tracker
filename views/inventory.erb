@@ -22,6 +22,10 @@
   </div>
 </div>
 
+<% if @add_item_form %>
+  <%== erb :add_item_form, layout: false %>
+<% end %>
+
 <div class="inv-page-nav">
   <% if params[:inv_page] > 1 %>
     <a href="/inventories/<%= params[:inv_name] %>?inv_page=<%= params[:inv_page] - 1 %>" class="page-button">

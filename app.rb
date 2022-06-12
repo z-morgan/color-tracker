@@ -236,7 +236,8 @@ get '/inventories/:inv_name/add' do
     redirect "/inventories/#{params[:inv_name].gsub(' ', '%20')}"
   else
     @line_name = @inventory.lines.keys[params[:inv_page] - 1]
-    erb :add_item
+    @add_item_form = true
+    erb :inventory
   end
 end
 
@@ -250,7 +251,6 @@ post '/inventories/:inv_name/add' do
   @line_name = @inventory.lines.keys[params[:inv_page] - 1]
 
   session[:msg] = "Color product added."
-  # erb :add_item
   redirect "/inventories/#{params[:inv_name].gsub(' ', '%20')}/add"
 end
 
