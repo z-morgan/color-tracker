@@ -4,6 +4,7 @@ require 'minitest/autorun'
 require 'rack/test'
 require 'fileutils'
 require_relative '../app'
+require_relative 'postgresdb_setup'
 
 class AppTest < Minitest::Test
   include Rack::Test::Methods

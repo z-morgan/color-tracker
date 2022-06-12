@@ -11,6 +11,8 @@ require 'bcrypt'
 require 'securerandom'
 
 require_relative 'lib/postgresdb'
+require_relative 'lib/inventory'
+require_relative 'lib/color'
 
 configure do
   enable :sessions
