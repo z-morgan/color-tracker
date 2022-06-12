@@ -28,6 +28,7 @@ GEM
       rack-protection (= 2.2.0)
       sinatra (= 2.2.0)
       tilt (~> 2.0)
+    sysrandom (1.0.5)
     tilt (2.0.10)
 
 PLATFORMS
@@ -42,6 +43,7 @@ DEPENDENCIES
   rack-test
   sinatra (~> 2.2.0)
   sinatra-contrib (~> 2.2.0)
+  sysrandom
 
 RUBY VERSION
    ruby 3.0.0p0

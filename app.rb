@@ -8,12 +8,13 @@ end
 require 'sinatra/reloader' if development?
 require 'tilt/erubis'
 require 'bcrypt'
+require 'securerandom'
 
 require_relative 'lib/postgresdb'
 
 configure do
   enable :sessions
-  set :session_secret, "secret" # this should be some random value if actually deploying app
+  set :session_secret, ENV.fetch('SESSION_SECRET') { SecureRandom.hex(64) }
   set :erb, :escape_html => true
 end
 
@@ -242,8 +243,16 @@ get '/inventories/:inv_name/add' do
 end
 
 post '/inventories/:inv_name/add' do
+  color_details = [
+    params[:line], 
+    params[:depth], 
+    params[:tone], 
+    params[:count], 
+    params[:inv_name], 
+    session[:username]
+  ]
 
-  @db.add_color(params[:line], params[:depth], params[:tone], params[:count], params[:inv_name], session[:username])
+  @db.add_color(*color_details)
 
   @inventory = @db.retrieve_inventory(session[:username], params[:inv_name])
   @inventory.sort_colors!(session[:sort])
@@ -255,7 +264,6 @@ post '/inventories/:inv_name/add' do
 end
 
 post "/inventories/:inv_name/use" do
-  # This line could be simplified if the page used the color's id instead of the string version.
   @db.use_color(session[:username], params[:inv_name], *(params[:color].split("_")))
 
   session[:msg] = "Color product used"

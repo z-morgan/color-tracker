@@ -9,6 +9,7 @@ gem "rack-test"
 gem "minitest"
 gem "bcrypt"
 gem "pg"
+gem "sysrandom"
 
 group :production do
   gem "puma"
