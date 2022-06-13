@@ -35,7 +35,8 @@ class PostgresDB
   end
 
   def reset_demo_account
-    statements_arr = File.open("data/stylishowl.sql", "r").read.split("\n\n")
+    setup_file_name = File.expand_path("../../data/stylishowl.sql", __FILE__)
+    statements_arr = File.open(setup_file_name, "r").read.split("\n\n")
     
     statements_arr.each do |sql|
       @connection.exec_params(sql)
@@ -192,57 +193,6 @@ class PostgresDB
   def line_exists?(line_name)
     sql = "SELECT 1 FROM lines WHERE name = $1"
     !(@connection.exec_params(sql, [line_name]).values.empty?)
-  end
-
-  def count_pages(rows)
-    full_pages, remaining_rows = rows.divmod(15)
-    full_pages += 1 unless remaining_rows.zero?
-    full_pages
-  end
-
-  def sql_by_sort_strategy(sort_params)
-    case sort_params
-    when ["depth", "ascending"]
-      <<~SQL
-        SELECT l.name, c.depth, c.tone, c.count FROM colors AS c
-        INNER JOIN inventories AS i ON i.id = c.inventory_id
-        INNER JOIN users AS u ON u.id = i.user_id
-        INNER JOIN lines AS l ON l.id = c.line_id
-        WHERE u.username = $1 AND i.name = $2 AND l.name = $3
-        ORDER BY c.depth::int ASC
-        LIMIT 15 OFFSET $4;
-      SQL
-    when ["depth", "descending"]
-      <<~SQL
-        SELECT l.name, c.depth, c.tone, c.count FROM colors AS c
-        INNER JOIN inventories AS i ON i.id = c.inventory_id
-        INNER JOIN users AS u ON u.id = i.user_id
-        INNER JOIN lines AS l ON l.id = c.line_id
-        WHERE u.username = $1 AND i.name = $2 AND l.name = $3
-        ORDER BY c.depth::int DESC
-        LIMIT 15 OFFSET $4;
-      SQL
-    when ["tone", "ascending"]
-      <<~SQL
-        SELECT l.name, c.depth, c.tone, c.count FROM colors AS c
-        INNER JOIN inventories AS i ON i.id = c.inventory_id
-        INNER JOIN users AS u ON u.id = i.user_id
-        INNER JOIN lines AS l ON l.id = c.line_id
-        WHERE u.username = $1 AND i.name = $2 AND l.name = $3
-        ORDER BY c.tone ASC
-        LIMIT 15 OFFSET $4;
-      SQL
-    when ["tone", "descending"]
-      <<~SQL
-        SELECT l.name, c.depth, c.tone, c.count FROM colors AS c
-        INNER JOIN inventories AS i ON i.id = c.inventory_id
-        INNER JOIN users AS u ON u.id = i.user_id
-        INNER JOIN lines AS l ON l.id = c.line_id
-        WHERE u.username = $1 AND i.name = $2 AND l.name = $3
-        ORDER BY c.tone DESC
-        LIMIT 15 OFFSET $4;
-      SQL
-    end 
   end
 
   def color_in_stock?(line_name, depth, tone, inv_name, username)

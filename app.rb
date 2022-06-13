@@ -116,7 +116,8 @@ after do
 end
 
 not_found do
-  redirect '/inventories'
+  status 404
+  erb :not_found
 end
 
 get '/' do
@@ -156,9 +157,8 @@ post '/signin' do
 end
 
 post '/signout' do
-  username = session[:username]
-  session[:msg] = "#{@db.user_first_name(username)} has signed out. See you soon!"
-  session.delete(:username)
+  session[:msg] = "#{@db.user_first_name(session.delete(:username))} has signed out. See you soon!"
+  # session.delete(:username)
   redirect '/signin'
 end
 

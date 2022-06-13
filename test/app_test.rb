@@ -1,3 +1,6 @@
+require 'simplecov'
+SimpleCov.start
+
 ENV["RACK_ENV"] = "test"
 
 require 'minitest/autorun'
@@ -111,6 +114,31 @@ class AppTest < Minitest::Test
     assert_equal 422, last_response.status
     assert_equal "text/html;charset=utf-8", last_response["Content-Type"]
     assert_includes last_response.body, "Wrong username or password"
+  end
+
+  def test_signin_page_already_signed_in
+    get '/signin', {}, signed_in
+    assert_equal 302, last_response.status
+    assert_equal "text/html;charset=utf-8", last_response["Content-Type"]
+    assert_equal "Welcome back Mr. Admin!", session[:msg]
+
+    get last_response["Location"]
+    assert_equal 200, last_response.status
+    assert_equal "text/html;charset=utf-8", last_response["Content-Type"]
+    assert_includes last_response.body, "Mr. Admin's Inventories"
+  end
+
+  def test_signout
+    post '/signout', {}, signed_in
+    assert_equal 302, last_response.status
+    assert_equal "text/html;charset=utf-8", last_response["Content-Type"]
+    assert_equal "Mr. Admin has signed out. See you soon!", session[:msg]
+    assert_nil session[:username]
+
+    get last_response["Location"]
+    assert_equal 200, last_response.status
+    assert_equal "text/html;charset=utf-8", last_response["Content-Type"]
+    assert_includes last_response.body, %q(<form action="/signin" method="post")
   end
 
   def test_inventores_list
@@ -308,5 +336,12 @@ class AppTest < Minitest::Test
     assert_equal 200, last_response.status
     assert_equal "text/html;charset=utf-8", last_response["Content-Type"]
     assert_includes last_response.body, "Stylish Owl's Inventories"
+  end
+
+  def test_not_found
+    get '/someotherpath', {}, signed_in
+    assert_equal 404, last_response.status
+    assert_equal "text/html;charset=utf-8", last_response["Content-Type"]
+    assert_includes last_response.body, "that page could not be found."
   end
 end
