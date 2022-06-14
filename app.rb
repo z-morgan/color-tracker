@@ -26,7 +26,10 @@ end
 
 COLORS_PER_PAGE = 15
 
+### View Helper Methods ###
+
 helpers do
+  # provides an indicator based on how the page elements are sorted
   def sort_indicator
     case session[:sort]
     when ["depth", "ascending"]  then %q(<div class="depth">↓</div>)
@@ -36,7 +39,6 @@ helpers do
     end
   end
 
-  # returns an array with the names of each line in the given inventory
   def all_lines
     @inventory.lines.keys
   end
@@ -56,13 +58,12 @@ helpers do
   end
 end
 
-####### Application helper methods #######
+### Application helper methods ###
 
 def verify_signed_in
-  unless session[:username]
-    session[:msg] = "Please sign in first."
-    redirect '/signin'
-  end
+  return if session[:username]
+  session[:msg] = "Please sign in first."
+  redirect '/signin'
 end
 
 def authentic_password?(password)
@@ -77,7 +78,15 @@ def valid_password?
   params[:password] && (params[:password] == params[:password2])
 end
 
-# makes the sort parameters from the current request available to routes 
+def page_number(page)
+  params[page] = if params[page]
+                   params[page].to_i
+                 else
+                   1
+                 end
+end
+
+# makes the sort parameters from the current request available to routes
 # and view templates
 def persist_sort_strategy
   if params[:attribute]
@@ -94,7 +103,7 @@ def invalid_object_name?(obj)
   obj == '' || obj =~ /[^a-z0-9' \-\.]/i
 end
 
-####### Routes and Filters #######
+### Routes and Filters ###
 
 before do
   @db = init_db
@@ -103,8 +112,8 @@ before do
 end
 
 before '/inventories/:inv_name*' do
-  params[:inv_page] ? params[:inv_page] = params[:inv_page].to_i : params[:inv_page] = 1
-  params[:line_page] ? params[:line_page] = params[:line_page].to_i : params[:line_page] = 1
+  page_number(:inv_page)
+  page_number(:line_page)
 
   @inventory = @db.retrieve_inventory(session[:username], params[:inv_name])
   @inventory.sort_colors!(session[:sort])
@@ -157,8 +166,8 @@ post '/signin' do
 end
 
 post '/signout' do
-  session[:msg] = "#{@db.user_first_name(session.delete(:username))} has signed out. See you soon!"
-  # session.delete(:username)
+  name = @db.user_first_name(session.delete(:username))
+  session[:msg] = "#{name} has signed out. See you soon!"
   redirect '/signin'
 end
 
@@ -179,7 +188,7 @@ post '/register' do
 
   else
     session[:msg] = "That username is already taken."
-  end 
+  end
 
   status 422
   erb :register
@@ -199,7 +208,8 @@ end
 post '/inventories/new' do
   inv_name = params[:new_inventory]
   if invalid_object_name?(inv_name)
-    session[:msg] = "The name can only have letters, numbers, spaces, dashes, periods, and apostrophies."
+    session[:msg] = "The name can only have letters, numbers," \
+    " spaces, dashes, periods, and apostrophies."
     halt 422, (erb :new_inventory)
   end
 
@@ -228,7 +238,8 @@ post '/inventories/:inv_name/new-line' do
     halt 422, (erb :new_line)
   end
 
-  @db.add_new_color_line(params[:new_line], params[:inv_name], session[:username])
+  @db.add_new_color_line(params[:new_line],
+                         params[:inv_name], session[:username])
   session[:msg] = "Color line added."
   redirect "/inventories/#{params[:inv_name].gsub(' ', '%20')}"
 end
@@ -246,11 +257,11 @@ end
 
 post '/inventories/:inv_name/add' do
   color_details = [
-    params[:line], 
-    params[:depth], 
-    params[:tone], 
-    params[:count], 
-    params[:inv_name], 
+    params[:line],
+    params[:depth],
+    params[:tone],
+    params[:count],
+    params[:inv_name],
     session[:username]
   ]
 
@@ -266,8 +277,9 @@ post '/inventories/:inv_name/add' do
 end
 
 post "/inventories/:inv_name/use" do
-  @db.use_color(session[:username], params[:inv_name], *(params[:color].split("_")))
+  @db.use_color(session[:username],
+                params[:inv_name], *(params[:color].split("_")))
 
   session[:msg] = "Color product used"
-  redirect "/inventories/#{params[:inv_name].gsub(' ', '%20')}" 
+  redirect "/inventories/#{params[:inv_name].gsub(' ', '%20')}"
 end

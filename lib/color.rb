@@ -1,5 +1,5 @@
 class Color
-  attr_accessor :line, :depth, :tone, :count
+  attr_reader :line, :depth, :tone, :count
 
   def initialize(line, depth, tone, count)
     @line = line

@@ -1,6 +1,20 @@
-### Postgres interface ###
-
 require 'pg'
+
+### Database Startup method ###
+
+def init_db
+  connection = if Sinatra::Base.production?
+                 PG.connect(ENV['DATABASE_URL'])
+               elsif Sinatra::Base.test?
+                 PG.connect(dbname: "salon_inventory_db_test")
+               else
+                 PG.connect(dbname: "salon_inventory_db")
+               end
+               
+  PostgresDB.new(connection)
+end
+
+### Postgres interface ###
 
 class PostgresDB
   def initialize(connection)
@@ -11,7 +25,7 @@ class PostgresDB
     unless ENV["RACK_ENV"] == "test"
       password = BCrypt::Password.create(password)
     end
-    
+
     sql = <<~SQL
       INSERT INTO users (username, password, first_name)
       VALUES ($1, $2, $3);
@@ -77,8 +91,6 @@ class PostgresDB
     @connection.exec_params(sql, [username, inv_name])
   end
 
-  # Before establishing the relationship between the line and inventory, checks
-  # to see if the line exists anywhere in the database, and if not, creates it. 
   def add_new_color_line(line_name, inv_name, username)
     unless line_exists?(line_name)
       sql = "INSERT INTO lines (name) VALUES ($1);"
@@ -87,70 +99,66 @@ class PostgresDB
 
     sql = <<~SQL
       INSERT INTO inventories_lines (inventory_id, line_id)
-      VALUES (
-        (SELECT id FROM inventories WHERE user_id = (
-         SELECT id FROM users WHERE username = $1) 
-         AND name = $2),
-        (SELECT id FROM lines WHERE name = $3)
-      );
+      VALUES ((SELECT id FROM inventories WHERE user_id = (
+         SELECT id FROM users WHERE username = $1) AND name = $2),
+        (SELECT id FROM lines WHERE name = $3));
     SQL
 
     @connection.exec_params(sql, [username, inv_name, line_name])
   end
 
-  # If the color is in stock already, adds N more. If not, creates it with 
-  # a count of N.
   def add_color(line_name, depth, tone, count, inv_name, username)
-    if color_in_stock?(line_name, depth, tone, inv_name, username)
-      sql = <<~SQL
-        UPDATE colors SET count = count + $6 WHERE id = (
-          SELECT c.id FROM colors AS c
-          INNER JOIN inventories AS i ON i.id = c.inventory_id
-          INNER JOIN lines AS l ON l.id = c.line_id
-          INNER JOIN users AS u ON u.id = i.user_id
-          WHERE u.username = $1 AND i.name = $2 AND l.name = $3
-          AND c.depth = $4 AND c.tone = $5
-        );
-      SQL
-    else
-      sql = <<~SQL
-        INSERT INTO colors (inventory_id, line_id, depth, tone, count)
-        VALUES (
-          (SELECT id FROM inventories WHERE name = $2
-          AND user_id = (SELECT id FROM users WHERE username = $1)),
-          (SELECT id FROM lines WHERE name = $3),
-          $4, $5, $6
-        )
-      SQL
-    end
-    @connection.exec_params(sql, [username, inv_name, line_name, depth, tone, count])
+    sql = if color_in_stock?(line_name, depth, tone, inv_name, username)
+            <<~SQL
+              UPDATE colors SET count = count + $6 WHERE id = (
+                SELECT c.id FROM colors AS c
+                INNER JOIN inventories AS i ON i.id = c.inventory_id
+                INNER JOIN lines AS l ON l.id = c.line_id
+                INNER JOIN users AS u ON u.id = i.user_id
+                WHERE u.username = $1 AND i.name = $2 AND l.name = $3
+                AND c.depth = $4 AND c.tone = $5
+              );
+            SQL
+          else
+            <<~SQL
+              INSERT INTO colors (inventory_id, line_id, depth, tone, count)
+              VALUES (
+                (SELECT id FROM inventories WHERE name = $2
+                AND user_id = (SELECT id FROM users WHERE username = $1)),
+                (SELECT id FROM lines WHERE name = $3),
+                $4, $5, $6
+              )
+            SQL
+          end
+
+    @connection.exec_params(sql, 
+                          [username, inv_name, line_name, depth, tone, count])
   end
 
-  # Subtracts 1 from the count. If count is 1, deletes the color instead.
   def use_color(username, inv_name, line, depth, tone)
-    if count_colors_in_stock(username, inv_name, line, depth, tone) > 1
-      sql = <<~SQL
-        UPDATE colors SET count = count - 1 WHERE id = (
-          SELECT c.id FROM colors AS c
-          INNER JOIN inventories AS i ON i.id = c.inventory_id
-          INNER JOIN lines AS l ON l.id = c.line_id
-          INNER JOIN users AS u ON u.id = i.user_id
-          WHERE u.username = $1 AND i.name = $2 AND l.name = $3
-          AND c.depth = $4 AND c.tone = $5
-        );
-      SQL
-    else
-      sql = <<~SQL
-        DELETE FROM colors WHERE id = (
-          SELECT c.id FROM colors AS c
-          INNER JOIN inventories AS i ON i.id = c.inventory_id
-          INNER JOIN lines AS l ON l.id = c.line_id
-          INNER JOIN users AS u ON u.id = i.user_id
-          WHERE u.username = $1 AND i.name = $2 AND l.name = $3
-          AND c.depth = $4 AND c.tone = $5
-        );
-      SQL
-    end
+    sql = if count_colors_in_stock(username, inv_name, line, depth, tone) > 1
+            <<~SQL
+              UPDATE colors SET count = count - 1 WHERE id = (
+                SELECT c.id FROM colors AS c
+                INNER JOIN inventories AS i ON i.id = c.inventory_id
+                INNER JOIN lines AS l ON l.id = c.line_id
+                INNER JOIN users AS u ON u.id = i.user_id
+                WHERE u.username = $1 AND i.name = $2 AND l.name = $3
+                AND c.depth = $4 AND c.tone = $5
+              );
+            SQL
+          else
+            <<~SQL
+              DELETE FROM colors WHERE id = (
+                SELECT c.id FROM colors AS c
+                INNER JOIN inventories AS i ON i.id = c.inventory_id
+                INNER JOIN lines AS l ON l.id = c.line_id
+                INNER JOIN users AS u ON u.id = i.user_id
+                WHERE u.username = $1 AND i.name = $2 AND l.name = $3
+                AND c.depth = $4 AND c.tone = $5
+              );
+            SQL
+          end
 
     @connection.exec_params(sql, [username, inv_name, line, depth, tone])
   end
@@ -161,7 +169,6 @@ class PostgresDB
 
   private
 
-  # Returns an array with the names of the lines in the inventory
   def line_names(inv_name, username)
     sql = <<~SQL
       SELECT l.name FROM lines AS l
@@ -205,7 +212,8 @@ class PostgresDB
       AND c.depth = $4 AND c.tone = $5 
     SQL
 
-    !(@connection.exec_params(sql, [username, inv_name, line_name, depth, tone]).values.empty?)
+    !(@connection.exec_params(sql, 
+                        [username, inv_name, line_name, depth, tone]).values.empty?)
   end
 
   def count_colors_in_stock(username, inv_name, line, depth, tone)
@@ -218,20 +226,7 @@ class PostgresDB
         AND c.depth = $4 AND c.tone = $5 
     SQL
 
-    @connection.exec_params(sql, [username, inv_name, line, depth, tone]).values[0][0].to_i
+    @connection.exec_params(sql, 
+                        [username, inv_name, line, depth, tone]).values[0][0].to_i
   end
-end
-
-####### Database Startup method #######
-
-def init_db
-  connection = if Sinatra::Base.production?
-                 PG.connect(ENV['DATABASE_URL'])
-               elsif Sinatra::Base.test?
-                 PG.connect(dbname: "salon_inventory_db_test")
-               else
-                 PG.connect(dbname: "salon_inventory_db")
-               end
-               
-  PostgresDB.new(connection)
 end
